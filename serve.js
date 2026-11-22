@@ -13,6 +13,7 @@ let root=null, account=null, profile=null, sequence=0;
 let stops=[], ministries=new Map(), positions=new Map(), joined=new Map();
 let shifts=new Map(), shiftJoined=new Map(), shiftRosters=new Map();
 let knownPositionListeners=new Set(), knownShiftListeners=new Set(), pendingWrites=new Set();
+let rosterListeners=new Map();
 
 const approved=()=>!!account && profile?.status==="approved";
 const admin=()=>approved() && profile?.role==="admin";
@@ -95,6 +96,31 @@ function shiftList(mid,pid){
   </form>`:""}
  </div>`;
 }
+
+function watchRoster(mid,pid,shift,token){
+ const key=shiftKey(mid,pid,shift.id);
+ const visibility=shift.rosterVisibility||"members";
+ const allowed=admin()||visibility==="members";
+ const previous=rosterListeners.get(key);
+ if(!allowed){
+   if(previous){previous();rosterListeners.delete(key);}
+   shiftRosters.delete(key);
+   return;
+ }
+ if(previous)return;
+ const stop=onSnapshot(collection(db,"ministries",mid,"positions",pid,"shifts",shift.id,"signups"),snap=>{
+   if(sequence!==token)return;
+   shiftRosters.set(key,snap.docs.map(d=>({id:d.id,...d.data()}))
+     .sort((a,b)=>(a.memberName||"").localeCompare(b.memberName||"")));
+   draw();
+ },error=>{
+   if(sequence!==token)return;
+   shiftRosters.delete(key);
+   notice("Unable to load volunteer names ("+(error.code||"error")+"). Check the published roster permissions.",true);
+ });
+ rosterListeners.set(key,stop);
+}
+
 function watchShiftSignup(mid,pid,sid,token){
  const key=shiftKey(mid,pid,sid);
  if(knownShiftListeners.has("signup:"+key))return;
@@ -134,6 +160,16 @@ function positionUI(mid,entry){
    data-position-archive data-mid="${esc(mid)}" data-pid="${esc(id)}">Remove Position</button>`:""}
  </div>`;
 }
+function archivedPositionsUI(mid){
+ const archived=[...(positions.get(mid)?.values()||[])].filter(p=>p.active===false);
+ if(!archived.length)return "";
+ return `<details class="archived-positions"><summary>Removed Positions (${archived.length})</summary>
+  ${archived.map(p=>`<div class="archived-entry"><span>${esc(p.title)}</span>
+   <button class="button outline" type="button" data-position-restore data-mid="${esc(mid)}"
+    data-pid="${esc(p.id)}">Restore</button></div>`).join("")}
+ </details>`;
+}
+
 function ministryUI(entry){
  const {id,...data}=entry;
  const items=[...(positions.get(id)?.values()||[])].filter(p=>p.active)
@@ -300,6 +336,39 @@ async function toggleShift(button){
  }finally{pendingWrites.delete(lock);draw();}
 }
 
+
+async function setPositionActive(mid,pid,active){
+ if(!admin()||!positions.get(mid)?.has(pid))return;
+ const name=positions.get(mid).get(pid).title;
+ if(!active && !window.confirm("Remove '"+name+"' from active Serve positions? Existing shifts and signups will be retained and the position can be restored."))return;
+ const key="position:"+positionKey(mid,pid);
+ if(pendingWrites.has(key))return;
+ pendingWrites.add(key);
+ try{
+  await updateDoc(doc(db,"ministries",mid,"positions",pid),{active});
+  notice(active?"Position restored.":"Position removed from active ministries. Its history is preserved.");
+ }catch(error){notice("Couldn't change position ("+(error.code||"error")+"). Check the updated Firebase rules.",true);}
+ finally{pendingWrites.delete(key);}
+}
+function archivePosition(button){setPositionActive(button.dataset.mid,button.dataset.pid,false);}
+function restorePosition(button){setPositionActive(button.dataset.mid,button.dataset.pid,true);}
+async function onChange(event){
+ const select=event.target.closest("[data-roster-visibility]");
+ if(!select||!admin())return;
+ const {mid,pid,sid}=select.dataset;
+ const value=select.value;
+ if(!["members","admins"].includes(value))return;
+ const key="roster:"+shiftKey(mid,pid,sid);
+ if(pendingWrites.has(key))return;
+ pendingWrites.add(key);select.disabled=true;
+ try{
+   await updateDoc(doc(db,"ministries",mid,"positions",pid,"shifts",sid),{rosterVisibility:value});
+   notice(value==="admins"?"Volunteer names are now administrator-only.":"Volunteer names are now visible to approved members.");
+ }catch(error){
+   notice("Couldn't change roster visibility ("+(error.code||"error")+"). Check the new Firebase rules.",true);
+ }finally{pendingWrites.delete(key);if(select.isConnected)select.disabled=false;}
+}
+
 function onClick(event){
  const button=event.target.closest("[data-toggle-signup]");
  if(button){toggleSignup(button);return;}
@@ -318,6 +387,8 @@ function onSubmit(event){
 export function unmountServe(){
  sequence++;
  for(const unsub of stops){try{unsub();}catch{}}
+ for(const unsub of rosterListeners.values()){try{unsub();}catch{}}
+ rosterListeners=new Map();
  stops=[];ministries=new Map();positions=new Map();joined=new Map();
  shifts=new Map();shiftJoined=new Map();shiftRosters=new Map();
  knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();
