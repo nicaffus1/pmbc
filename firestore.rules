@@ -21,12 +21,13 @@ service cloud.firestore {
         ])
         && data.text is string && data.text.size() >= 3 && data.text.size() <= 2000
         && data.visibility in ['members', 'leadership']
-        && data.status in ['active', 'answered']
+        && data.status in ['active', 'answered', 'removed']
         && data.authorId is string
         && data.authorName is string && data.authorName.size() >= 2 && data.authorName.size() <= 80;
     }
     function canReadPrayer(data) {
       return approvedMember()
+        && (data.status != 'removed' || isAdmin())
         && (data.visibility == 'members'
           || data.authorId == request.auth.uid
           || isAdmin());
@@ -72,6 +73,9 @@ service cloud.firestore {
         && allowedPrayerFields(request.resource.data)
         && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['text','visibility','status','updatedAt'])
+        && (isAdmin()
+          || (resource.data.status != 'removed'
+            && request.resource.data.status in ['active','answered']))
         && request.resource.data.updatedAt == request.time;
 
       // No accidental permanent removal of prayer history in V1.
