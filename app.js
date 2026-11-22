@@ -4,6 +4,7 @@ import { mountPrayer, unmountPrayer } from "./prayer.js";
 import { mountServe, unmountServe } from "./serve.js";
 import { mountHomeUpdates, unmountHomeUpdates } from "./home-updates.js";
 import { mountNotifications, unmountNotifications } from "./notifications.js";
+import { mountVideos, unmountVideos } from "./videos.js";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification
@@ -77,6 +78,10 @@ function home() {
    </div>
    <div id="home-events"><p class="muted">Loading events…</p></div>
    <div id="home-event-history"></div>
+ </section>
+ <section class="home-video-section" aria-label="Latest church videos">
+  <div class="home-heading"><h2>Latest Videos</h2><a href="#videos" class="video-top-link">View all</a></div>
+  <div id="home-video-list"><p class="muted">Loading latest videos…</p></div>
  </section>`;
 }
 function prayer() {
@@ -87,6 +92,11 @@ function serve() {
 }
 function notifications(){
  return '<div id="notifications-root"></div>';
+}
+function videos(){
+ return `<div class="videos-page"><a href="#home" class="video-back">← Home</a><h1>Church Videos</h1>
+ <p class="muted">Latest uploads from Providence on YouTube.</p>
+ <div id="videos-page-list"><p class="muted">Loading videos…</p></div></div>`;
 }
 function form() {
  let state = `<span class="eyebrow">Member access</span><h1>${authMode==="register"?"Request Membership":authMode==="reset"?"Reset Password":"Member Sign In"}</h1>
@@ -127,7 +137,7 @@ function adminView() {
  <button class="button outline" id="backToAccount">Back to Account</button>
  ${list || '<p class="muted">No pending membership requests.</p>'}`;
 }
-const views = {home, prayer, serve, more, notifications};
+const views = {home, prayer, serve, more, notifications, videos};
 function navigate(next) {
  section = views[next]?next:"home";render();
 }
@@ -136,8 +146,10 @@ function render(){
  unmountServe();
  unmountHomeUpdates();
  unmountNotifications();
+ unmountVideos();
  screen.innerHTML=views[section]();
- if(section==="home") mountHomeUpdates(screen,user,profile);
+ if(section==="home"){ mountHomeUpdates(screen,user,profile);mountVideos(false); }
+ if(section==="videos") mountVideos(true);
  if(section==="notifications") mountNotifications(screen.querySelector("#notifications-root"),user,profile);
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
  if(section==="serve") mountServe(screen.querySelector("#serve-root"),user,profile);
