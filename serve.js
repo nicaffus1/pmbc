@@ -264,31 +264,33 @@ function ministryUI(entry){
    ${items.length?items.map(p=>`<option value="${esc(p.id)}" ${p.id===selected?"selected":""}>${esc(p.title)}</option>`).join(""):
       '<option value="">No volunteer positions yet</option>'}
   </select>
+  ${admin()?`<details class="ministry-settings" data-panel="ministry-settings:${esc(id)}">
+    <summary><span class="ministry-settings-heading">Ministry Settings</span><span class="ministry-settings-hint">Admin only</span></summary>
+    <div class="ministry-settings-content">
+      <details class="admin-expander" data-panel="position:${esc(id)}">
+        <summary>Add volunteer position</summary>
+        <form class="stack position-form" data-position-form data-mid="${esc(id)}">
+          <label>Position name
+            <input class="field" name="title" minlength="2" maxlength="80" required
+              placeholder="e.g. Classroom Helper"></label>
+          <label>Description (optional)
+            <textarea class="field" name="description" maxlength="500" rows="2"
+              placeholder="What will a volunteer do?"></textarea></label>
+          <button class="button" type="submit">Save Position</button>
+        </form>
+      </details>
+      ${archivedPositionsUI(id)}
+      <details class="manage-menu ministry-manage" data-panel="manage-ministry:${esc(id)}">
+        <summary>Remove this ministry</summary>
+        <div class="manage-menu-body">
+          <p class="section-note">Hides its positions and shifts. Existing sign-ups are preserved and it can be restored.</p>
+          <button type="button" class="button outline remove-control"
+            data-archive-item="ministry" data-mid="${esc(id)}">Confirm removal…</button>
+        </div>
+      </details>
+    </div>
+  </details>`:""}
   ${chosen?positionUI(id,chosen):'<p class="muted position-empty">No active volunteer positions in this ministry.</p>'}
-  ${admin()?`<section class="ministry-admin-tools" aria-label="Ministry administration">
-    <div class="admin-tools-heading">Ministry Administration</div>
-    <details class="admin-expander" data-panel="position:${esc(id)}">
-      <summary>Add a volunteer position</summary>
-      <form class="stack position-form" data-position-form data-mid="${esc(id)}">
-        <label>Position name
-          <input class="field" name="title" minlength="2" maxlength="80" required
-            placeholder="e.g. Classroom Helper"></label>
-        <label>Description (optional)
-          <textarea class="field" name="description" maxlength="500" rows="2"
-            placeholder="What will a volunteer do?"></textarea></label>
-        <button class="button" type="submit">Save Position</button>
-      </form>
-    </details>
-    <details class="manage-menu ministry-manage" data-panel="manage-ministry:${esc(id)}">
-      <summary>Manage this ministry</summary>
-      <div class="manage-menu-body">
-        <p class="section-note">Removing a ministry hides its positions and shifts. All records are preserved.</p>
-        <button type="button" class="button outline remove-control"
-          data-archive-item="ministry" data-mid="${esc(id)}">Remove this ministry</button>
-      </div>
-    </details>
-    ${archivedPositionsUI(id)}
-  </section>`:""}
  </article>`;
 }
 function draw(){
@@ -300,7 +302,7 @@ function draw(){
    if(panel.open)expandedPanels.add(id);
    else expandedPanels.delete(id);
    if(!panel.open||!id)continue;
-   const form=panel.querySelector(":scope > .edit-form");
+   const form=panel.querySelector(":scope > form");
    if(form){
      formDrafts.set(id,Object.fromEntries(
        [...form.querySelectorAll("[name]")].map(control=>[control.name,control.value])
@@ -331,7 +333,7 @@ function draw(){
    panel.open=expandedPanels.has(id);
    const draft=formDrafts.get(id);
    if(draft){
-     const form=panel.querySelector(":scope > .edit-form");
+     const form=panel.querySelector(":scope > form");
      for(const [name,value] of Object.entries(draft)){
        const control=form?.elements.namedItem(name);
        if(control)control.value=value;
