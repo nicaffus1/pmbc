@@ -1,0 +1,1 @@
+This folder holds the ORIGINAL PMBC dove artwork and resized home-screen icons. Upload dove-source.jpg, icon-180.png, icon-192.png, and icon-512.png from the PMBC-starter.zip here. Do not substitute or redraw the logo.
