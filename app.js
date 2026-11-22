@@ -22,6 +22,25 @@ const navTabs = [...document.querySelectorAll("[data-tab]")];
 let user = null, profile = null, accountError = "", authBusy = false;
 let section = "home", authMode = "login", review = null;
 
+const THEME_KEY="pmbc-color-theme";
+function savedTheme(){
+ try{return localStorage.getItem(THEME_KEY)==="dark"?"dark":"light";}catch{return "light";}
+}
+function applyTheme(mode){
+ const dark=mode==="dark";
+ document.documentElement.classList.toggle("dark-mode",dark);
+ document.documentElement.style.colorScheme=dark?"dark":"light";
+ const meta=document.querySelector('meta[name="theme-color"]');
+ if(meta)meta.setAttribute("content",dark?"#111e2b":"#082f59");
+ const toggle=document.getElementById("darkModeToggle");
+ if(toggle){toggle.checked=dark;toggle.setAttribute("aria-checked",String(dark));}
+}
+function setTheme(mode){
+ try{localStorage.setItem(THEME_KEY,mode);}catch{}
+ applyTheme(mode);
+}
+applyTheme(savedTheme());
+
 const escapeHTML = (x) => String(x ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const isApproved = () => profile?.status === "approved";
 const isAdmin = () => isApproved() && profile?.role === "admin";
@@ -182,6 +201,13 @@ function accountPage() {
 }
 function more() {
  return `<span class="eyebrow">Connect &amp; Support</span><h1>More</h1>
+ <section class="card appearance-card" aria-label="Appearance settings">
+  <h2>Appearance</h2>
+  <label class="theme-toggle-row" for="darkModeToggle">
+    <span><strong>Dark Mode</strong><small>Use a darker look for comfortable reading.</small></span>
+    <input id="darkModeToggle" type="checkbox" role="switch" aria-label="Dark Mode" ${savedTheme()==="dark"?"checked":""}>
+  </label>
+ </section>
  <section class="card share-pmbc-card" aria-label="Share the Providence app">
   <h2>Share Providence</h2>
   <p>Invite someone to stay connected with our church.</p>
@@ -246,6 +272,7 @@ function render(){
  screen.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{location.hash=b.dataset.go;}));
  screen.querySelectorAll("[data-authmode]").forEach(b=>b.addEventListener("click",()=>{authMode=b.dataset.authmode;accountError="";render()}));
  screen.querySelector("#sharePmbcApp")?.addEventListener("click",sharePmbcApp);
+ screen.querySelector("#darkModeToggle")?.addEventListener("change",e=>setTheme(e.target.checked?"dark":"light"));
  screen.querySelector("#contactForm")?.addEventListener("submit",submitContact);
  const af=screen.querySelector("#authForm");
  if(af)af.addEventListener("submit",submitAuth);
