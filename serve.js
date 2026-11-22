@@ -372,7 +372,7 @@ async function addMinistry(event){
  if(name.length<2||name.length>80||description.length>500){
   notice("Use a ministry name of 2–80 characters and a description under 500 characters.",true);return;
  }
- const button=form.querySelector('[type="submit"]');
+ const button=form.querySelector("#addMinistryButton");
  if(button){button.disabled=true;button.textContent="Saving Ministry…";}
  notice("Saving ministry to Firebase…");
  try{
