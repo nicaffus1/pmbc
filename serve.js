@@ -526,12 +526,12 @@ async function signForWeeks(button){
  pendingWrites.add(lock);button.disabled=true;
  try{
   const dates=datesForSchedule(schedule,count);
-  const pending=[];
-  for(const date of dates){
+  const checks=await Promise.all(dates.map(async date=>{
    const ref=doc(db,"ministries",mid,"positions",pid,"recurring",rid,"dates",date,"members",account.uid);
    const snapshot=await getDoc(ref);
-   if(!snapshot.exists())pending.push({date,ref});
-  }
+   return snapshot.exists()?null:{date,ref};
+  }));
+  const pending=checks.filter(Boolean);
   if(pending.length){
    const batch=writeBatch(db);
    for(const {date,ref} of pending)batch.set(ref,{
