@@ -30,8 +30,14 @@ The `firestore.rules` file in this repository is a **source copy**. Committing i
 
 Firestore security enforces membership and prayer audience; hiding an item in the UI alone is not privacy. Never put confidential member data or administrator credentials in GitHub.
 
+## Serve: ministry foundation
+- Approved administrators can create real church ministries through Serve.
+- Approved members can view ministry names and descriptions; pending accounts cannot read ministries.
+- Before the new Serve screen can save or display ministries, publish the updated `firestore.rules` in Firebase Console → Firestore Database → Rules. GitHub changes do not publish Firebase permissions.
+- This phase intentionally does **not** yet support shifts, volunteer sign-ups, ministry leader delegation, or editing ministries. We'll add those progressively with corresponding database rules.
+
 ## Known limitations / next work
-- Events, announcements, giving link, and ministry volunteer schedules still need to be built.
+- Events, announcements, giving link, and ministry volunteer schedules still need to be built; the ministry directory itself is implemented.
 - Google Sign-In isn't yet wired into the UI (email/password is supported).
 - Public announcements and events are currently empty-state placeholders.
 - Scheduled reminders require a secure server-side scheduler and notification permission.
