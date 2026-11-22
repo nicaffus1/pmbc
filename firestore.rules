@@ -14,12 +14,14 @@ service cloud.firestore {
     }
     function allowedPrayerFields(data) {
       return data.keys().hasOnly([
-          'text', 'visibility', 'status', 'authorId', 'authorName', 'createdAt', 'updatedAt'
+          'text', 'subjectName', 'visibility', 'status', 'authorId', 'authorName', 'createdAt', 'updatedAt'
         ])
         && data.keys().hasAll([
-          'text', 'visibility', 'status', 'authorId', 'authorName', 'createdAt', 'updatedAt'
+          'text', 'subjectName', 'visibility', 'status', 'authorId', 'authorName', 'createdAt', 'updatedAt'
         ])
         && data.text is string && data.text.size() >= 3 && data.text.size() <= 2000
+        && data.subjectName is string
+        && data.subjectName.size() >= 2 && data.subjectName.size() <= 80
         && data.visibility in ['members', 'leadership']
         && data.status in ['active', 'answered', 'removed']
         && data.authorId is string
@@ -72,7 +74,7 @@ service cloud.firestore {
         && (resource.data.authorId == request.auth.uid || isAdmin())
         && allowedPrayerFields(request.resource.data)
         && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['text','visibility','status','updatedAt'])
+          .hasOnly(['text','subjectName','visibility','status','updatedAt'])
         && (isAdmin()
           || (resource.data.status != 'removed'
             && request.resource.data.status in ['active','answered']))
@@ -82,28 +84,35 @@ service cloud.firestore {
       allow delete: if false;
 
       match /prayedBy/{memberId} {
-        // Members see only their own 'I Prayed' state, never a list of voters.
+        function parentPrayer() {
+          return get(/databases/$(database)/documents/prayers/$(prayerId)).data;
+        }
+        // An ordinary member can see only their own acknowledgement, not totals.
         allow get: if approvedMember()
-          && request.auth.uid == memberId
-          && canReadPrayer(
-            get(/databases/$(database)/documents/prayers/$(prayerId)).data
-          );
-        allow list: if false;
-
+          && request.auth.uid == memberId && canReadPrayer(parentPrayer());
+        // Only request authors and admins can read all acknowledgements and sum counts.
+        allow list: if approvedMember()
+          && (isAdmin() || parentPrayer().authorId == request.auth.uid)
+          && canReadPrayer(parentPrayer());
         allow create: if approvedMember()
           && request.auth.uid == memberId
-          && canReadPrayer(
-            get(/databases/$(database)/documents/prayers/$(prayerId)).data
-          )
-          && request.resource.data.keys().hasOnly(['createdAt'])
-          && request.resource.data.keys().hasAll(['createdAt'])
-          && request.resource.data.createdAt == request.time;
-        allow delete: if approvedMember()
+          && canReadPrayer(parentPrayer()) && parentPrayer().status == 'active'
+          && request.resource.data.keys().hasOnly(['createdAt','count'])
+          && request.resource.data.keys().hasAll(['createdAt','count'])
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.count == 1;
+        // Subsequent prayers increment the member's personal count one at a time.
+        allow update: if approvedMember()
           && request.auth.uid == memberId
-          && canReadPrayer(
-            get(/databases/$(database)/documents/prayers/$(prayerId)).data
-          );
-        allow update: if false;
+          && canReadPrayer(parentPrayer()) && parentPrayer().status == 'active'
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['count','lastPrayedAt'])
+          && request.resource.data.count is int
+          && request.resource.data.count ==
+            (('count' in resource.data) ? resource.data.count : 1) + 1
+          && request.resource.data.lastPrayedAt == request.time;
+        // No member can erase past prayer acknowledgements.
+        allow delete: if false;
       }
     }
 
