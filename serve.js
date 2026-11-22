@@ -226,6 +226,59 @@ async function toggleSignup(button){
  }catch(err){notice("Couldn't update your signup ("+(err.code||"error")+"). Check Firestore rules.",true);}
  finally{pendingWrites.delete(key);draw();}
 }
+
+async function addShift(event){
+ event.preventDefault();
+ const form=event.target.closest("[data-shift-form]");
+ if(!form||!admin())return;
+ const mid=form.dataset.mid,pid=form.dataset.pid;
+ if(!ministries.get(mid)?.active||!positions.get(mid)?.get(pid)?.active)return;
+ const date=form.elements.namedItem("date").value;
+ const start=form.elements.namedItem("start").value;
+ const end=form.elements.namedItem("end").value;
+ const notes=form.elements.namedItem("notes").value.trim();
+ const startsAt=date+"T"+start, endsAt=date+"T"+end;
+ const validDateTime=new RegExp("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$");
+ if(!validDateTime.test(startsAt)||!validDateTime.test(endsAt)
+   ||endsAt<=startsAt||notes.length>300){
+   notice("Enter a valid date and a later end time on the same day.",true);return;
+ }
+ const button=form.querySelector("[type=submit]");button.disabled=true;
+ try{
+   await addDoc(collection(db,"ministries",mid,"positions",pid,"shifts"),{
+     startsAt,endsAt,timeZone:"America/Chicago",notes,active:true,
+     createdBy:account.uid,createdAt:serverTimestamp()
+   });
+   form.reset();notice("Scheduled shift added.");
+ }catch(error){
+   notice("Couldn't add shift ("+(error.code||"error")+"). Check the new Firebase rules.",true);
+ }finally{if(button.isConnected)button.disabled=false;}
+}
+async function toggleShift(button){
+ if(!approved())return;
+ const mid=button.dataset.mid,pid=button.dataset.pid,sid=button.dataset.sid;
+ const key=shiftKey(mid,pid,sid), lock="shift:"+key;
+ const item=shifts.get(positionKey(mid,pid))?.get(sid);
+ if(pendingWrites.has(lock)||!ministries.get(mid)?.active
+   ||!positions.get(mid)?.get(pid)?.active||!item?.active)return;
+ const alreadyJoined=shiftJoined.get(key)===true;
+ if(!alreadyJoined&&item.endsAt<chicagoNow()){
+   notice("This shift has ended.",true);return;
+ }
+ pendingWrites.add(lock);draw();
+ const ref=doc(db,"ministries",mid,"positions",pid,"shifts",sid,"signups",account.uid);
+ try{
+   if(alreadyJoined)await deleteDoc(ref);
+   else await setDoc(ref,{
+     memberId:account.uid,memberName:profile.displayName,createdAt:serverTimestamp()
+   });
+   shiftJoined.set(key,!alreadyJoined);
+   notice(alreadyJoined?"Your shift sign-up was canceled.":"You are signed up for this shift.");
+ }catch(error){
+   notice("Couldn't change shift signup ("+(error.code||"error")+"). Check Firebase rules.",true);
+ }finally{pendingWrites.delete(lock);draw();}
+}
+
 function onClick(event){
  const button=event.target.closest("[data-toggle-signup]");
  if(button){toggleSignup(button);return;}
