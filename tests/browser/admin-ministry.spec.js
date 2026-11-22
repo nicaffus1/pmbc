@@ -36,7 +36,13 @@ test("administrator can create ministries, schedule recurring serving and modera
   await page.locator("#email").fill(email);
   await page.locator("#password").fill(password);
   await page.locator('#authForm button[type="submit"]').click();
-  await expect(page.getByText("Admin UI Test")).toBeVisible();
+  try{
+   await expect(page.getByText("Admin UI Test")).toBeVisible({timeout:15000});
+  }catch(error){
+   const screen=await page.locator("#screen").innerText().catch(()=>"No screen");
+   throw new Error("Emulated sign-in was not ready. Screen: "+screen.slice(0,800)+
+    " | JavaScript errors: "+pageErrors.join(" | ")+" | "+error.message);
+  }
   await page.locator('[data-tab="serve"]').click();
   await expect(page.getByText("Create a Ministry")).toBeVisible();
   await expect(page.locator("#serveBuildVersion")).toContainText("rebuild-v2");
