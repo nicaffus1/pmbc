@@ -265,3 +265,38 @@
 .push-token-panel textarea{font-size:12px;overflow-wrap:anywhere;word-break:break-all;margin-bottom:10px;resize:none}
 .manual-push-admin{margin-top:16px}
 .manual-push-admin>.button{display:inline-flex;width:auto;text-decoration:none}
+
+/* Notifications v38: member-first inbox and compact administrator actions. */
+#notifications-root>h1{margin:6px 0 3px}
+#notifications-root>.muted{margin:0 0 16px;font-size:13px}
+.notification-composer{margin:12px 0 21px;border-color:#bcdde4;background:#f8fcfc}
+.notification-composer>summary{font-size:15px;font-weight:750;list-style:none;cursor:pointer;color:#0a6074}
+.notification-composer>summary::-webkit-details-marker{display:none}
+.notification-composer[open]>summary{padding-bottom:12px;border-bottom:1px solid #dbe9ed}
+.notification-composer .stack{gap:12px}
+.notification-more-options{border-top:1px solid #e4ebee;margin-top:4px;padding-top:8px}
+.notification-more-options>summary{font-size:12px;color:#526f80;cursor:pointer;font-weight:650;padding:6px 0}
+.notification-more-options>label{display:block;margin-top:12px}
+.notification-inbox-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0 11px}
+.notification-inbox-heading h2{font-size:19px;margin:0 0 1px}
+.notification-inbox-heading .section-note{margin:0}
+.notification-filter{display:flex;gap:3px;background:#edf3f6;border-radius:10px;padding:3px;flex-shrink:0}
+.notification-filter button{border:0;background:transparent;border-radius:8px;padding:8px 12px;font:inherit;font-weight:700;font-size:12px;color:#567186;cursor:pointer}
+.notification-filter button.selected{background:white;color:#0b6276;box-shadow:0 1px 4px #082f5919}
+.notification-filter button:focus-visible,.notification-more-options>summary:focus-visible{outline:2px solid #008f9e;outline-offset:2px}
+.notification-entry{margin:8px 0;padding:13px 14px}
+.notification-entry.read{opacity:.85}
+.notification-entry.unread{border-left:3px solid #1596a1;background:#fbfefe}
+.notification-entry p{margin:8px 0 11px}
+.notification-actions{gap:6px}
+.notification-manage{margin-left:auto;position:relative}
+.notification-manage>summary{font-size:12px;color:#587589;padding:9px 4px;cursor:pointer;list-style:none}
+.notification-manage>summary::-webkit-details-marker{display:none}
+.notification-manage[open]{flex-basis:100%;margin-left:0;padding-top:9px;border-top:1px solid #e5ecef}
+.notification-manage .button{margin:3px 6px 3px 0}
+.notification-preferences{margin:23px 0 4px;background:#fafcfd;box-shadow:none;border-color:#e1eaee}
+.notification-preferences>summary{font-weight:650;color:#47687b;font-size:13px;cursor:pointer}
+.notification-preferences-body{padding-top:12px}
+.notification-preferences-body .section-note{font-size:12px;line-height:1.5}
+.notification-preferences .push-token-panel{margin-top:10px}
+@media(max-width:380px){.notification-filter button{padding:8px 9px}.notification-actions .button{padding:8px 10px}}
