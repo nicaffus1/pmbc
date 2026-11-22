@@ -1,5 +1,7 @@
 // PMBC Serve — ministry positions and member opt-in, backed by Firestore.
 import { db } from "./firebase.js";
+import { createMinistry, observeMinistries } from "./ministry-data.js";
+import { buildId, upcomingWeeklyDates, churchClock, shiftIsUpcoming } from "./serve-model.js";
 import {
   collection, doc, addDoc, setDoc, deleteDoc, updateDoc, getDoc,
   onSnapshot, serverTimestamp, writeBatch
@@ -37,13 +39,7 @@ function volunteerUI(mid,pid){
  ${pendingWrites.has(key)?"disabled":""}>${isJoined?"✓ Volunteering — Leave Position":"I'd Like to Serve"}</button>`;
 }
 
-function chicagoNow(){
- const fields={};
- for(const part of new Intl.DateTimeFormat("en-US",{timeZone:"America/Chicago",
-  year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",
-  minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date()))fields[part.type]=part.value;
- return fields.year+"-"+fields.month+"-"+fields.day+"T"+fields.hour+":"+fields.minute;
-}
+function chicagoNow(){return churchClock();}
 function showShiftTime(value){
  const date=value?.slice(0,10), time=value?.slice(11);
  if(!date||!time)return esc(value);
@@ -53,7 +49,7 @@ function showShiftTime(value){
  +" · "+new Date(2000,0,1,h,min).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}));
 }
 function shiftList(mid,pid){
- const list=[...(shifts.get(positionKey(mid,pid))?.values()||[])].filter(x=>x.active && x.endsAt>=chicagoNow())
+ const list=[...(shifts.get(positionKey(mid,pid))?.values()||[])].filter(x=>x.active && shiftIsUpcoming(x.endsAt))
    .sort((a,b)=>a.startsAt.localeCompare(b.startsAt));
  const rows=list.map(x=>{
   const key=shiftKey(mid,pid,x.id), signed=shiftJoined.get(key)===true;
@@ -191,19 +187,7 @@ function watchShifts(mid,pid,token){
 
 
 const weekdayNames=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-function datesForSchedule(schedule,count=5){
- const today=chicagoNow().slice(0,10);
- const [y,m,d]=today.split("-").map(Number);
- const utc=new Date(Date.UTC(y,m-1,d));
- let delta=(schedule.weekday-utc.getUTCDay()+7)%7;
- if(delta===0&&schedule.endTime<=chicagoNow().slice(11))delta=7;
- const dates=[];
- for(let i=0;i<count;i++){
-  const next=new Date(utc.getTime()+(delta+i*7)*86400000);
-  dates.push(next.toISOString().slice(0,10));
- }
- return dates;
-}
+function datesForSchedule(schedule,count=5){return upcomingWeeklyDates(schedule.weekday,schedule.endTime,count);}
 function recurringUI(mid,pid){
  const schedules=[...(recurring.get(positionKey(mid,pid))?.values()||[])].filter(s=>s.active)
   .sort((a,b)=>a.title.localeCompare(b.title));
@@ -376,10 +360,8 @@ async function addMinistry(event){
  if(button){button.disabled=true;button.textContent="Saving Ministry…";}
  notice("Saving ministry to Firebase…");
  try{
-  const created=await addDoc(collection(db,"ministries"),{
-   name,description,active:true,createdBy:account.uid,createdAt:serverTimestamp()
-  });
-  selectedMinistry=created.id;
+  const createdId=await createMinistry({name,description,uid:account.uid});
+  selectedMinistry=createdId;
   form.reset();
   notice("Ministry saved. It should appear selected below.");
  }catch(error){
@@ -648,7 +630,7 @@ export function mountServe(container,user,userProfile){
  root.innerHTML=`<span class="eyebrow">Get involved</span><h1>Serve</h1>
  <p class="muted">Find a ministry and sign up for a scheduled shift.</p>
  <div id="serveMessage" hidden></div>
- <p class="section-note" id="serveBuildVersion">Serve build: 2026-11-21.12</p>
+ <p class="section-note" id="serveBuildVersion">Serve build: ${buildId}</p>
  ${admin()?`<section class="card" id="ministryComposer">
   <h2>Create a Ministry</h2>
   <form id="ministryForm" class="stack" novalidate>
@@ -671,12 +653,12 @@ export function mountServe(container,user,userProfile){
  root.addEventListener("click",onClick);
  root.addEventListener("change",onChange);
  const token=sequence;
- stops.push(onSnapshot(collection(db,"ministries"),snap=>{
+ stops.push(observeMinistries(entries=>{
    if(token!==sequence)return;
-   for(const d of snap.docs){
-     if(d.data().active && !ministries.has(d.id))watchPositions(d.id,token);
+   for(const d of entries){
+     if(d.active && !ministries.has(d.id))watchPositions(d.id,token);
    }
-   ministries=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
+   ministries=new Map(entries.map(d=>[d.id,d]));
    draw();
  },err=>{
    if(token!==sequence)return;
