@@ -168,7 +168,7 @@ async function videosResponse(request,origin){
 
 
 const FACEBOOK_PAGE_URL="https://www.facebook.com/providencembccenter/";
-const FACEBOOK_API_VERSION="v24.0";
+const FACEBOOK_API_VERSION="v27.0";
 const FB_POST_PATTERN=/^[0-9]+_[0-9]+$/;
 async function facebookPostsResponse(env,origin){
  if(!env.FACEBOOK_PAGE_ID||!env.FACEBOOK_PAGE_ACCESS_TOKEN){
