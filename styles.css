@@ -127,3 +127,19 @@
 .edit-panel .edit-form label{color:#224b6a;font-size:13px}
 .edit-panel .edit-form>.button{align-self:flex-start}
 .shift-form select.field,.edit-form select.field{font-size:16px;background:#fff}
+
+/* One compact, contextual admin settings panel directly below ministry and position selection. */
+.ministry-settings{border:1px solid #dce8f0;border-radius:11px;background:#f5f9fc;margin:0 0 16px;overflow:hidden}
+.ministry-settings>summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;padding:10px 12px;color:#27526b}
+.ministry-settings>summary::-webkit-details-marker{display:none}
+.ministry-settings>summary::before{content:"⚙";font-size:16px;line-height:1}
+.ministry-settings>summary::after{content:"⌄";font-size:19px;color:#657b90;margin-left:auto;transition:transform .15s}
+.ministry-settings[open]>summary::after{transform:rotate(180deg)}
+.ministry-settings-heading{font-size:13px;font-weight:750}
+.ministry-settings-hint{font-size:11px;color:#7a8b99}
+.ministry-settings-content{padding:0 12px 13px;border-top:1px solid #e1eaf1}
+.ministry-settings-content>.admin-expander{margin-top:12px}
+.ministry-settings-content>.ministry-manage{margin-top:12px}
+.ministry-settings-content>.archive-list{margin-top:12px}
+.ministry-settings-content .remove-control{font-size:12px}
+.ministry-settings:focus-within{border-color:#8fc2d0}
