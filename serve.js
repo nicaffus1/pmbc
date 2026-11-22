@@ -2,7 +2,7 @@
 import { db } from "./firebase.js";
 import {
   collection, doc, addDoc, setDoc, deleteDoc, updateDoc,
-  onSnapshot, serverTimestamp
+  onSnapshot, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({
@@ -14,11 +14,14 @@ let stops=[], ministries=new Map(), positions=new Map(), joined=new Map();
 let shifts=new Map(), shiftJoined=new Map(), shiftRosters=new Map();
 let knownPositionListeners=new Set(), knownShiftListeners=new Set(), pendingWrites=new Set();
 let rosterListeners=new Map();
+let selectedMinistry="", recurring=new Map(), recurringJoined=new Map(), recurringRosters=new Map();
+let recurringListeners=new Set(), recurringRostersListeners=new Map();
 
 const approved=()=>!!account && profile?.status==="approved";
 const admin=()=>approved() && profile?.role==="admin";
 const positionKey=(mid,pid)=>mid+"/"+pid;
 const shiftKey=(mid,pid,sid)=>mid+"/"+pid+"/"+sid;
+const recurringKey=(mid,pid,rid)=>mid+"/"+pid+"/"+rid;
 
 function notice(message,isError=false){
  const el=root?.querySelector("#serveMessage");
@@ -156,6 +159,7 @@ function positionUI(mid,entry){
   <p class="section-note">Ongoing ministry interest</p>
   ${volunteerUI(mid,id)}
   ${shiftList(mid,id)}
+  ${recurringUI(mid,id)}
   ${admin()?`<button type="button" class="button outline position-archive"
    data-position-archive data-mid="${esc(mid)}" data-pid="${esc(id)}">Remove Position</button>`:""}
  </div>`;
@@ -193,10 +197,22 @@ function ministryUI(entry){
 }
 function draw(){
  const area=root?.querySelector("#ministriesList");if(!area)return;
- const entries=[...ministries.values()].filter(m=>m.active)
+ const all=[...ministries.values()].filter(m=>m.active)
    .sort((a,b)=>a.name.localeCompare(b.name));
- if(!entries.length) {
+ const picker=root.querySelector("#ministryPicker");
+ if(picker){
+  const old=selectedMinistry;
+  picker.innerHTML='<option value="">Choose a ministry…</option>'+
+   all.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name)+'</option>').join("");
+  if(all.some(m=>m.id===old))picker.value=old;
+  else{selectedMinistry="";picker.value="";}
+ }
+ const entries=all.filter(m=>m.id===selectedMinistry);
+ if(!all.length){
    area.innerHTML='<div class="notice">No ministries have been added yet.</div>';return;
+ }
+ if(!selectedMinistry){
+   area.innerHTML='<p class="notice">Choose a ministry above to see its positions and upcoming shifts.</p>';return;
  }
  area.innerHTML=entries.map(ministryUI).join("");
 }
@@ -219,7 +235,7 @@ function watchPositions(mid,token){
    if(sequence!==token)return;
    const records=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
    positions.set(mid,records);
-   for(const p of records.values())if(p.active){watchSignup(mid,p.id,token);watchShifts(mid,p.id,token);}
+   for(const p of records.values())if(p.active){watchSignup(mid,p.id,token);watchShifts(mid,p.id,token);watchRecurring(mid,p.id,token);}
    draw();
  },err=>{
    if(sequence!==token)return;
@@ -353,6 +369,8 @@ async function setPositionActive(mid,pid,active){
 function archivePosition(button){setPositionActive(button.dataset.mid,button.dataset.pid,false);}
 function restorePosition(button){setPositionActive(button.dataset.mid,button.dataset.pid,true);}
 async function onChange(event){
+ const ministryPicker=event.target.closest("#ministryPicker");
+ if(ministryPicker){selectedMinistry=ministryPicker.value;draw();return;}
  const select=event.target.closest("[data-roster-visibility]");
  if(!select||!admin())return;
  const {mid,pid,sid}=select.dataset;
@@ -392,6 +410,10 @@ export function unmountServe(){
  stops=[];ministries=new Map();positions=new Map();joined=new Map();
  shifts=new Map();shiftJoined=new Map();shiftRosters=new Map();
  knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();
+ selectedMinistry="";recurring=new Map();recurringJoined=new Map();recurringRosters=new Map();
+ recurringListeners=new Set();
+ for(const stop of recurringRostersListeners.values()){try{stop();}catch{}}
+ recurringRostersListeners=new Map();
  root=null;account=null;profile=null;
 }
 export function mountServe(container,user,userProfile){
@@ -416,6 +438,8 @@ export function mountServe(container,user,userProfile){
   </form>
  </section>`:""}
  <h2>Church Ministries</h2>
+ <label class="ministry-picker-label" for="ministryPicker">Select a ministry</label>
+ <select class="field" id="ministryPicker"><option value="">Choose a ministry…</option></select>
  <div id="ministriesList" aria-live="polite"><p class="muted">Loading ministries…</p></div>`;
  root.addEventListener("submit",onSubmit);
  root.addEventListener("click",onClick);
