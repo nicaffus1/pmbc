@@ -15,7 +15,7 @@ let shifts=new Map(), shiftJoined=new Map(), shiftRosters=new Map();
 let rosterSubscriptions=new Map();
 let knownPositionListeners=new Set(), knownShiftListeners=new Set(), pendingWrites=new Set();
 let watchedMinistries=new Set();
-let selectedMinistryId="", expandedPanels=new Set();
+let selectedMinistryId="", expandedPanels=new Set(), selectedPositionByMinistry=new Map();
 
 const approved=()=>!!account && profile?.status==="approved";
 const admin=()=>approved() && profile?.role==="admin";
@@ -192,33 +192,34 @@ function archivedMinistriesUI(){
 
 function positionUI(mid,entry){
  const {id,...data}=entry;
- const count=[...(shifts.get(positionKey(mid,id))?.values()||[])]
-  .filter(shift=>shift.active && shift.endsAt>=chicagoNow()).length;
- return `<details class="position-item position-dropdown"
-  data-panel="view-position:${esc(mid)}:${esc(id)}">
-  <summary class="position-dropdown-summary">
-    <span class="position-dropdown-name">${esc(data.title)}</span>
-    <span class="position-dropdown-count">${count} upcoming ${count===1?"shift":"shifts"}</span>
-  </summary>
-  <div class="position-dropdown-content">
-    ${data.description?`<p class="position-description">${esc(data.description)}</p>`:""}
-    ${shiftList(mid,id)}
-    ${admin()?`<details class="manage-menu position-manage" data-panel="manage-position:${esc(mid)}:${esc(id)}">
-      <summary>Manage volunteer position</summary>
-      <div class="manage-menu-body">
-        <button type="button" class="button outline remove-control"
-          data-archive-item="position" data-mid="${esc(mid)}" data-pid="${esc(id)}">Remove this position</button>
-      </div>
-    </details>`:""}
-  </div>
- </details>`;
+ return `<section class="position-detail" aria-label="Selected volunteer position">
+  ${data.description?`<p class="position-description">${esc(data.description)}</p>`:""}
+  ${shiftList(mid,id)}
+  ${admin()?`<details class="manage-menu position-manage" data-panel="manage-position:${esc(mid)}:${esc(id)}">
+   <summary>Manage this position</summary>
+   <div class="manage-menu-body">
+    <button type="button" class="button outline remove-control"
+     data-archive-item="position" data-mid="${esc(mid)}" data-pid="${esc(id)}">Remove this position</button>
+   </div>
+  </details>`:""}
+ </section>`;
 }
 function ministryUI(entry){
  const {id,...data}=entry;
  const items=[...(positions.get(id)?.values()||[])].filter(p=>p.active)
    .sort((a,b)=>a.title.localeCompare(b.title));
+ const current=selectedPositionByMinistry.get(id);
+ const selected=items.some(p=>p.id===current)?current:(items[0]?.id||"");
+ selectedPositionByMinistry.set(id,selected);
+ const chosen=items.find(p=>p.id===selected);
  return `<article class="card ministry-item compact-ministry">
-  ${items.length?items.map(p=>positionUI(id,p)).join(""):'<p class="muted">No volunteer positions yet.</p>'}
+  <label class="position-picker-label" for="positionPicker">Select a Volunteer Position</label>
+  <select class="field position-picker" id="positionPicker" aria-label="Select a Volunteer Position"
+   ${items.length?"":"disabled"}>
+   ${items.length?items.map(p=>`<option value="${esc(p.id)}" ${p.id===selected?"selected":""}>${esc(p.title)}</option>`).join(""):
+      '<option value="">No volunteer positions yet</option>'}
+  </select>
+  ${chosen?positionUI(id,chosen):'<p class="muted position-empty">No active volunteer positions in this ministry.</p>'}
   ${admin()?`<section class="ministry-admin-tools" aria-label="Ministry administration">
     <div class="admin-tools-heading">Ministry Administration</div>
     <details class="admin-expander" data-panel="position:${esc(id)}">
@@ -388,6 +389,10 @@ function onChange(event){
    selectedMinistryId=event.target.value;
    expandedPanels.clear();
    draw();
+ }else if(event.target.id==="positionPicker"){
+   selectedPositionByMinistry.set(selectedMinistryId,event.target.value);
+   expandedPanels.clear();
+   draw();
  }
 }
 async function shareRoster(button){
@@ -473,7 +478,7 @@ export function unmountServe(){
  stops=[];ministries=new Map();positions=new Map();
  shifts=new Map();shiftJoined=new Map();shiftRosters=new Map();
  knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();watchedMinistries=new Set();
- selectedMinistryId="";expandedPanels=new Set();
+ selectedMinistryId="";expandedPanels=new Set();selectedPositionByMinistry=new Map();
  root=null;account=null;profile=null;
 }
 export function mountServe(container,user,userProfile){
