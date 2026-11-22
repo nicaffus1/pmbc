@@ -1,6 +1,6 @@
 // Home announcements and events — public viewing, administrator-managed Firestore records.
 import { db } from "./firebase.js";
-import { collection,doc,addDoc,updateDoc,onSnapshot,serverTimestamp }
+import { collection,doc,addDoc,updateDoc,onSnapshot,serverTimestamp,query,where }
  from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -210,7 +210,8 @@ export function mountHomeUpdates(container,user,profile){
  root.addEventListener("click",handleClick);
  const token=generation;
  for(const [kind,path] of [["announcement","announcements"],["event","events"]]){
-  const unsub=onSnapshot(collection(db,path),snap=>{
+  const reference=admin?collection(db,path):query(collection(db,path),where("active","==",true));
+  const unsub=onSnapshot(reference,snap=>{
    if(token!==generation)return;
    (kind==="event"?events:announcements)=new Map(snap.docs.map(d=>[d.id,d.data()]));
    loaded.add(kind);
