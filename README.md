@@ -51,3 +51,10 @@ Use the exact supplied artwork at `assets/dove-source.jpg` and the home-screen i
 
 ## First administrator
 The first trusted administrator was established by manually setting their own `users/{uid}` Firestore document to exact string fields `role: "admin"` and `status: "approved"`. Only trusted administrators can approve subsequent membership requests through the app.
+
+## Shift rosters and position removal
+- Each shift displays live volunteer names and a count, scoped to its configured audience.
+- Shift creator may choose whether approved members or administrators may view the roster. Administrators may also change the audience on an existing shift. Older shifts default to member-visible rosters.
+- Firestore rules restrict roster **list** reads to authorized viewers; a user's own signup remains readable to themselves. Roster privacy is not just UI hiding.
+- Administrators can **Remove Position** (sets `active: false`) and later **Restore** it from the collapsed Removed Positions list. It is not a permanent delete: historical shifts and signups are retained, and new signups for archived positions are blocked.
+- **Deployment:** publish the entire updated `firestore.rules` to Firebase Console → Firestore Rules. Do not just copy new fragments over older rules. Test a member-visible roster, an admin-only roster, removal, and restoration with the separate approved test member account before storing sensitive volunteer information.
