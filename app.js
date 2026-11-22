@@ -131,7 +131,6 @@ function home() {
    <p>Worship. Pray. Connect. Serve.</p>
  </section>
  <section id="daily-verse" class="daily-verse card" aria-label="Verse of the Day"></section>
- ${givingCard(true)}
  ${facebookUpdates()}
  <div id="updates-notice" class="notice" hidden></div>
  <section class="home-updates" aria-label="Church updates">
