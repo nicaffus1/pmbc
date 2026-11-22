@@ -337,3 +337,14 @@
 .bottom{grid-template-columns:repeat(5,minmax(0,1fr))}
 .bottom button{min-width:0;min-height:49px;padding:4px 1px;justify-content:center}
 .bottom button[data-tab="videos"] .glyph{font-size:20px;line-height:1.5}
+
+/* PMBC v43 — daily King James Version Scripture card. */
+.daily-verse{margin:15px 0 10px;padding:19px 19px 17px;border:1px solid #d7e7eb;background:linear-gradient(135deg,#f1faf9,#f6f8fd);box-shadow:none}
+.daily-verse-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.daily-verse-top span{font-size:10px;letter-spacing:.11em;color:#127887;font-weight:800}
+.daily-verse-top time{font-size:12px;color:#6b7e8e;font-weight:600}
+.daily-verse blockquote{border:0;margin:16px 0 15px;font:500 18px/1.65 Georgia,"Times New Roman",serif;color:#183b57;overflow-wrap:anywhere}
+.daily-verse>a{font-size:13px;font-weight:800;color:#0b6578;text-decoration:none}
+.daily-verse>a span{font-weight:600;color:#647f8b}
+.daily-verse>a:focus-visible{outline:3px solid #009da8;outline-offset:4px}
+@media(max-width:380px){.daily-verse{padding:16px}.daily-verse blockquote{font-size:17px}}
