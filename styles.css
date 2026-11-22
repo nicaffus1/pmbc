@@ -161,3 +161,12 @@
 .position-add-compact[open]>summary{display:inline-block}
 .position-add-compact>.position-form{padding:12px;margin-top:7px;background:#f6fafc;border:1px solid #dfebef;border-radius:10px}
 .position-add-compact>.position-form .button{align-self:flex-start}
+
+/* Church profile sourced from the church's Facebook About information */
+.church-info{margin-top:10px}
+.church-info h2{margin:0 0 9px;font-size:18px;line-height:1.35}
+.church-info>p{font-size:14px;color:#344e64;line-height:1.6;margin-bottom:17px}
+.church-contact{display:grid;gap:13px}
+.church-contact>div{display:grid;gap:4px;padding-top:10px;border-top:1px solid #e8eef2;min-width:0}
+.church-contact strong{font-size:12px;color:#597083}
+.church-contact a{font-size:14px;color:#0b627b;text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
