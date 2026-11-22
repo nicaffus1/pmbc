@@ -166,6 +166,72 @@ async function videosResponse(request,origin){
  }
 }
 
+
+const FACEBOOK_PAGE_URL="https://www.facebook.com/providencembccenter/";
+const FACEBOOK_API_VERSION="v24.0";
+const FB_POST_PATTERN=/^[0-9]+_[0-9]+$/;
+async function facebookPostsResponse(env,origin){
+ if(!env.FACEBOOK_PAGE_ID||!env.FACEBOOK_PAGE_ACCESS_TOKEN){
+  return cors(json({connected:false,posts:[],message:"The church Facebook Page connection still needs to be authorized."}),origin);
+ }
+ const id=String(env.FACEBOOK_PAGE_ID).trim();
+ if(!/^[0-9]{5,30}$/.test(id))return cors(fail(503,"Facebook Page ID is not configured correctly."),origin);
+ // Cache only successful, authorized feed responses. No access token appears in URL exposed to visitors.
+ const cache=caches.default;
+ const cacheKey=new Request("https://pmbc-facebook-cache.invalid/latest/"+id);
+ const saved=await cache.match(cacheKey);
+ if(saved)return cors(saved,origin);
+ const endpoint=new URL("https://graph.facebook.com/"+FACEBOOK_API_VERSION+"/"+id+"/posts");
+ endpoint.searchParams.set("fields","id,message,created_time,permalink_url,full_picture,attachments{media_type,media,subattachments}");
+ endpoint.searchParams.set("limit","10");
+ try{
+  const response=await fetch(endpoint.href,{
+   headers:{"Authorization":"Bearer "+env.FACEBOOK_PAGE_ACCESS_TOKEN,"Accept":"application/json"},
+   signal:AbortSignal.timeout(10000)
+  });
+  if(!response.ok){
+   // Do not expose Meta error bodies, access tokens, or permissions details to clients.
+   return cors(json({connected:false,posts:[],message:"Facebook could not return church posts. The Page connection may need attention."},503),origin);
+  }
+  const result=await response.json();
+  if(!Array.isArray(result.data))throw Error("Unexpected Meta response");
+  const posts=result.data.filter(post=>typeof post.id==="string"&&
+    (FB_POST_PATTERN.test(post.id)||/^[0-9]{5,30}$/.test(post.id))).map(post=>{
+   const media=post.attachments?.data?.[0];
+   const photos=[];
+   const pushPhoto=url=>{
+    if(typeof url!=="string")return;
+    try{
+     const parsed=new URL(url);
+     if(parsed.protocol!=="https:"||photos.length>=4)return;
+     photos.push(url);
+    }catch{}
+   };
+   pushPhoto(media?.media?.image?.src||post.full_picture);
+   for(const child of media?.subattachments?.data||[])pushPhoto(child?.media?.image?.src);
+   const permalink=typeof post.permalink_url==="string"&&
+    /^https:\/\/(www\.|m\.)?facebook\.com\//.test(post.permalink_url)
+      ?post.permalink_url:FACEBOOK_PAGE_URL;
+   return {
+    id:post.id,
+    message:typeof post.message==="string"?post.message.slice(0,4000):"",
+    createdAt:typeof post.created_time==="string"?post.created_time:"",
+    url:permalink,
+    images:photos
+   };
+  }).filter(post=>post.message||post.images.length);
+  const payload={connected:true,posts,updatedAt:new Date().toISOString()};
+  const output=new Response(JSON.stringify(payload),{
+   headers:{"content-type":"application/json; charset=utf-8",
+    "cache-control":"public, max-age=900","X-Content-Type-Options":"nosniff"}
+  });
+  await cache.put(cacheKey,output.clone());
+  return cors(output,origin);
+ }catch{
+  return cors(json({connected:false,posts:[],message:"Could not load Facebook updates right now."},503),origin);
+ }
+}
+
 export default{
  async fetch(request,env){
   const origin=request.headers.get("Origin")||"";
@@ -179,6 +245,8 @@ export default{
   if(origin!==ORIGIN)return cors(fail(403,"This service accepts requests only from PMBC."),origin);
   if(request.method==="GET"&&new URL(request.url).pathname==="/videos")
    return videosResponse(request,origin);
+  if(request.method==="GET"&&new URL(request.url).pathname==="/facebook-posts")
+   return facebookPostsResponse(env,origin);
   if(request.method!=="POST"||new URL(request.url).pathname!=="/send")return cors(fail(404,"Not found."),origin);
   try{
    const uid=await verifiedUser(request);
