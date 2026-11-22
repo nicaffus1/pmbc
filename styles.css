@@ -75,3 +75,22 @@
 .archive-row span{font-size:13px;overflow-wrap:anywhere;min-width:0}
 .archive-row button{font-size:12px!important;padding:8px 11px!important;flex-shrink:0}
 .archived-ministries{margin:16px 0}
+
+/* Serve v19: volunteering first, administration in contextual menus. */
+.shift-entry{padding:14px;margin:10px 0 12px}
+.shift-entry>.shift-primary-actions{display:flex;flex-wrap:wrap;margin-top:11px}
+.shift-primary-actions>.button{margin-top:0;min-height:41px}
+.manage-menu{border-top:1px solid #e3ebf0;margin-top:12px;padding-top:3px}
+.manage-menu>summary{cursor:pointer;font-size:12px;font-weight:650;color:#61768b;padding:9px 1px;list-style-position:inside}
+.manage-menu[open]>summary{color:#0b596c}
+.manage-menu-body{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:3px 3px 9px}
+.manage-menu-body .button{margin:0!important}
+.manage-menu-body .section-note{margin:3px 0;font-weight:400}
+.position-manage{margin-top:12px}
+.ministry-admin-tools{border-top:1px solid #dfe9ef;margin-top:20px;padding-top:12px}
+.admin-tools-heading{font-size:11px;font-weight:800;letter-spacing:.075em;text-transform:uppercase;color:#718497}
+.ministry-admin-tools>.admin-expander{margin-top:9px}
+.ministry-manage{margin-top:8px}
+.add-shift-control{background:#f6fafc;margin-top:13px}
+.remove-control{margin:0!important}
+.archive-list{margin-top:12px}
