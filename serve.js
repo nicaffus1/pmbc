@@ -441,6 +441,25 @@ async function setArchived(type,mid,pid,sid,archive){
      ["ministries",mid,"positions",pid,"shifts",sid];
  try{
    await updateDoc(doc(db,...path),{active:!archive});
+   // Reconcile the local selector immediately after a confirmed Firestore write.
+   // The live subscription will subsequently refresh this same record.
+   const updated={...entity,active:!archive};
+   if(type==="ministry"){
+     ministries.set(mid,updated);
+     if(archive && selectedMinistryId===mid){
+       selectedMinistryId="";
+       expandedPanels.clear();
+     }
+   }else if(type==="position"){
+     positions.get(mid)?.set(pid,updated);
+     if(archive && selectedPositionByMinistry.get(mid)===pid){
+       selectedPositionByMinistry.delete(mid);
+       expandedPanels.clear();
+     }
+   }else{
+     shifts.get(positionKey(mid,pid))?.set(sid,updated);
+   }
+   draw();
    notice(type[0].toUpperCase()+type.slice(1)+(archive?" removed.":" restored.")+
      " Existing volunteer history was preserved.");
  }catch(error){
