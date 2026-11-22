@@ -110,6 +110,62 @@ async function sendOne(access,token,notice,id){
   return false;
  }catch{return false;}
 }
+
+const CHANNEL_URL="https://www.youtube.com/@providencembc4487";
+const YOUTUBE_VIDEO=/^[A-Za-z0-9_-]{11}$/;
+function xmlUnescape(input){
+ return String(input).replace(/&#(x[0-9a-f]+|\d+);|&(amp|lt|gt|quot|apos);/gi,(full,number,named)=>{
+  if(number){const point=number[0].toLowerCase()==="x"?parseInt(number.slice(1),16):parseInt(number,10);
+   return point>=32&&point<=0x10ffff?String.fromCodePoint(point):"";}
+  return {amp:"&",lt:"<",gt:">",quot:'"',apos:"'"}[named]||full;
+ });
+}
+function extractChannelId(page){
+ const match=page.match(/(?:\"channelId\"|\"externalId\"|\"browseId\")\s*:\s*\"(UC[A-Za-z0-9_-]{22})\"/)
+  ||page.match(/youtube\.com\/channel\/(UC[A-Za-z0-9_-]{22})/);
+ return match?.[1]||"";
+}
+function parseVideos(xml){
+ const entries=xml.match(/<entry>[\s\S]*?<\/entry>/g)||[];
+ return entries.slice(0,10).map(entry=>{
+  const id=entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/)?.[1]||"";
+  const title=entry.match(/<title>([\s\S]*?)<\/title>/)?.[1]||"";
+  const published=entry.match(/<published>([^<]+)<\/published>/)?.[1]||"";
+  return {id,title:xmlUnescape(title),published,
+   url:"https://www.youtube.com/watch?v="+id,
+   thumbnail:"https://i.ytimg.com/vi/"+id+"/hqdefault.jpg"};
+ }).filter(v=>YOUTUBE_VIDEO.test(v.id)&&v.title.length>0);
+}
+async function loadVideos(){
+ const channel=await fetch(CHANNEL_URL,{headers:{"User-Agent":"Mozilla/5.0 (compatible; PMBCVideoFeed/1.0)"}});
+ if(!channel.ok)throw Error("YouTube channel lookup unavailable");
+ const html=(await channel.text()).slice(0,3000000);
+ const id=extractChannelId(html);
+ if(!id)throw Error("Unable to find the channel's YouTube ID");
+ const rss=await fetch("https://www.youtube.com/feeds/videos.xml?channel_id="+id);
+ if(!rss.ok)throw Error("YouTube upload feed unavailable");
+ const videos=parseVideos(await rss.text());
+ if(!videos.length)throw Error("The channel feed has no public videos");
+ return {videos,channel:CHANNEL_URL,updatedAt:new Date().toISOString()};
+}
+async function videosResponse(request,origin){
+ const key=new Request("https://pmbc-video-cache.invalid/latest",{method:"GET"});
+ const cache=caches.default;
+ const cached=await cache.match(key);
+ if(cached)return cors(cached,origin);
+ try{
+  const payload=await loadVideos();
+  const response=new Response(JSON.stringify(payload),{
+   headers:{"content-type":"application/json; charset=utf-8",
+    "cache-control":"public, max-age=900","X-Content-Type-Options":"nosniff"}
+  });
+  await cache.put(key,response.clone());
+  return cors(response,origin);
+ }catch(error){
+  return cors(json({error:"Unable to load recent videos right now.",channel:CHANNEL_URL},503),origin);
+ }
+}
+
 export default{
  async fetch(request,env){
   const origin=request.headers.get("Origin")||"";
@@ -120,7 +176,9 @@ export default{
     "Access-Control-Max-Age":"3600"
    }}),origin);
   }
-  if(origin!==ORIGIN)return fail(403,"This sender accepts requests only from PMBC.");
+  if(origin!==ORIGIN)return cors(fail(403,"This service accepts requests only from PMBC."),origin);
+  if(request.method==="GET"&&new URL(request.url).pathname==="/videos")
+   return videosResponse(request,origin);
   if(request.method!=="POST"||new URL(request.url).pathname!=="/send")return cors(fail(404,"Not found."),origin);
   try{
    const uid=await verifiedUser(request);
