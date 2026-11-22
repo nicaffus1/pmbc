@@ -182,9 +182,32 @@ function accountPage() {
 }
 function more() {
  return `<span class="eyebrow">Connect &amp; Support</span><h1>More</h1>
+ <section class="card share-pmbc-card" aria-label="Share the Providence app">
+  <h2>Share Providence</h2>
+  <p>Invite someone to stay connected with our church.</p>
+  <button type="button" class="button share-pmbc-button" id="sharePmbcApp">Share Church App ↗</button>
+  <p class="section-note" id="sharePmbcStatus" role="status" aria-live="polite"></p>
+ </section>
  ${givingCard()}
  ${contactUs()}
  ${churchInfo()}`;
+}
+async function sharePmbcApp(){
+ const url="https://nicaffus1.github.io/pmbc/#home";
+ const title="Providence Missionary Baptist Church";
+ const text="Stay connected with Providence Missionary Baptist Church through our church app.";
+ const status=document.getElementById("sharePmbcStatus");
+ if(navigator.share){
+  try{await navigator.share({title,text,url});return;}
+  catch(err){if(err?.name==="AbortError")return;}
+ }
+ try{
+  await navigator.clipboard.writeText(url);
+  if(status)status.textContent="Church app link copied! Paste it into a text or message.";
+ }catch{
+  window.prompt("Copy the church app link:",url);
+  if(status)status.textContent="Copy this link to share the church app.";
+ }
 }
 function adminView() {
  if(!review) return account();
@@ -222,6 +245,7 @@ function render(){
  document.title="PMBC — "+section[0].toUpperCase()+section.slice(1);
  screen.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{location.hash=b.dataset.go;}));
  screen.querySelectorAll("[data-authmode]").forEach(b=>b.addEventListener("click",()=>{authMode=b.dataset.authmode;accountError="";render()}));
+ screen.querySelector("#sharePmbcApp")?.addEventListener("click",sharePmbcApp);
  screen.querySelector("#contactForm")?.addEventListener("submit",submitContact);
  const af=screen.querySelector("#authForm");
  if(af)af.addEventListener("submit",submitAuth);
