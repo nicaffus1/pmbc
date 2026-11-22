@@ -192,17 +192,26 @@ function archivedMinistriesUI(){
 
 function positionUI(mid,entry){
  const {id,...data}=entry;
- return `<div class="position-item">
-  <strong>${esc(data.title)}</strong>
-  ${data.description?`<p>${esc(data.description)}</p>`:""}
-  ${shiftList(mid,id)}
-  ${admin()?`<details class="manage-menu position-manage" data-panel="manage-position:${esc(mid)}:${esc(id)}">
-   <summary>Manage volunteer position</summary>
-   <div class="manage-menu-body">
-    <button type="button" class="button outline remove-control" data-archive-item="position" data-mid="${esc(mid)}" data-pid="${esc(id)}">Remove this position</button>
-   </div>
-  </details>`:""}
- </div>`;
+ const count=[...(shifts.get(positionKey(mid,id))?.values()||[])]
+  .filter(shift=>shift.active && shift.endsAt>=chicagoNow()).length;
+ return `<details class="position-item position-dropdown"
+  data-panel="view-position:${esc(mid)}:${esc(id)}">
+  <summary class="position-dropdown-summary">
+    <span class="position-dropdown-name">${esc(data.title)}</span>
+    <span class="position-dropdown-count">${count} upcoming ${count===1?"shift":"shifts"}</span>
+  </summary>
+  <div class="position-dropdown-content">
+    ${data.description?`<p class="position-description">${esc(data.description)}</p>`:""}
+    ${shiftList(mid,id)}
+    ${admin()?`<details class="manage-menu position-manage" data-panel="manage-position:${esc(mid)}:${esc(id)}">
+      <summary>Manage volunteer position</summary>
+      <div class="manage-menu-body">
+        <button type="button" class="button outline remove-control"
+          data-archive-item="position" data-mid="${esc(mid)}" data-pid="${esc(id)}">Remove this position</button>
+      </div>
+    </details>`:""}
+  </div>
+ </details>`;
 }
 function ministryUI(entry){
  const {id,...data}=entry;
