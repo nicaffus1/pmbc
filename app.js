@@ -5,6 +5,7 @@ import { mountServe, unmountServe } from "./serve.js";
 import { mountHomeUpdates, unmountHomeUpdates } from "./home-updates.js";
 import { mountNotifications, unmountNotifications } from "./notifications.js";
 import { mountVideos, unmountVideos } from "./videos.js";
+import { mountDailyVerse, unmountDailyVerse } from "./verse-of-day.js";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification
@@ -56,6 +57,7 @@ function home() {
    <h1>Welcome</h1>
    <p>Worship. Pray. Connect. Serve.</p>
  </section>
+ <section id="daily-verse" class="daily-verse card" aria-label="Verse of the Day"></section>
  ${givingCard(true)}
  <div id="updates-notice" class="notice" hidden></div>
  <section class="home-updates" aria-label="Church updates">
@@ -146,8 +148,9 @@ function render(){
  unmountHomeUpdates();
  unmountNotifications();
  unmountVideos();
+ unmountDailyVerse();
  screen.innerHTML=views[section]();
- if(section==="home"){ mountHomeUpdates(screen,user,profile);mountVideos(false); }
+ if(section==="home"){ mountHomeUpdates(screen,user,profile);mountDailyVerse();mountVideos(false); }
  if(section==="videos") mountVideos(true);
  if(section==="notifications") mountNotifications(screen.querySelector("#notifications-root"),user,profile);
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
