@@ -10,7 +10,7 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({
 }[c]));
 
 let root=null, account=null, profile=null, sequence=0;
-let stops=[], ministries=new Map(), positions=new Map(), joined=new Map();
+let stops=[], ministries=new Map(), positions=new Map();
 let shifts=new Map(), shiftJoined=new Map(), shiftRosters=new Map();
 let rosterSubscriptions=new Map();
 let knownPositionListeners=new Set(), knownShiftListeners=new Set(), pendingWrites=new Set();
@@ -205,26 +205,12 @@ function draw(){
    panel.open=expandedPanels.has(panel.dataset.panel);
  }
 }
-function watchSignup(mid,pid,token){
- const key=positionKey(mid,pid);
- if(knownPositionListeners.has(key))return;
- knownPositionListeners.add(key);
- const ref=doc(db,"ministries",mid,"positions",pid,"signups",account.uid);
- const unsub=onSnapshot(ref,snap=>{
-   if(sequence!==token)return;
-   joined.set(key,snap.exists());draw();
- },err=>{
-   if(sequence!==token)return;
-   notice("Unable to check your sign-up status ("+(err.code||"network error")+").",true);
- });
- stops.push(unsub);
-}
 function watchPositions(mid,token){
  const unsub=onSnapshot(collection(db,"ministries",mid,"positions"),snap=>{
    if(sequence!==token)return;
    const records=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
    positions.set(mid,records);
-   for(const p of records.values())if(p.active){watchSignup(mid,p.id,token);watchShifts(mid,p.id,token);}
+   for(const p of records.values())if(p.active)watchShifts(mid,p.id,token);
    draw();
  },err=>{
    if(sequence!==token)return;
@@ -271,25 +257,6 @@ async function addPosition(event){
  }catch(err){notice("Couldn't add position ("+(err.code||"error")+"). Confirm the updated Firestore rules are published.",true);}
  finally{if(button.isConnected)button.disabled=false;}
 }
-async function toggleSignup(button){
- if(!approved())return;
- const mid=button.dataset.mid,pid=button.dataset.pid;
- const key=positionKey(mid,pid);
- if(pendingWrites.has(key)||!ministries.get(mid)?.active||!positions.get(mid)?.get(pid)?.active)return;
- pendingWrites.add(key);draw();
- const ref=doc(db,"ministries",mid,"positions",pid,"signups",account.uid);
- const wasJoined=joined.get(key)===true;
- try {
-   if(wasJoined)await deleteDoc(ref);
-   else await setDoc(ref,{
-     memberId:account.uid,memberName:profile.displayName,createdAt:serverTimestamp()
-   });
-   joined.set(key,!wasJoined);
-   notice(wasJoined?"You left this volunteer position.":"You're signed up as an interested volunteer.");
- }catch(err){notice("Couldn't update your signup ("+(err.code||"error")+"). Check Firestore rules.",true);}
- finally{pendingWrites.delete(key);draw();}
-}
-
 async function addShift(event){
  event.preventDefault();
  const form=event.target.closest("[data-shift-form]");
@@ -385,7 +352,7 @@ export function unmountServe(){
  for(const unsub of stops){try{unsub();}catch{}}
  for(const unsub of rosterSubscriptions.values()){try{unsub();}catch{}}
  rosterSubscriptions=new Map();
- stops=[];ministries=new Map();positions=new Map();joined=new Map();
+ stops=[];ministries=new Map();positions=new Map();
  shifts=new Map();shiftJoined=new Map();shiftRosters=new Map();
  knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();
  selectedMinistryId="";expandedPanels=new Set();
