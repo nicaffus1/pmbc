@@ -357,3 +357,22 @@
 .account-page{min-height:45vh}
 .account-page h1{margin-bottom:16px}
 @media(max-width:360px){.top{padding-left:13px;padding-right:13px}.header-actions{gap:5px}}
+
+/* PMBC v46 — church contact form within More. */
+.contact-card{margin:16px 0}
+.contact-card h2{margin:0 0 8px;font-size:19px}
+.contact-card>p{font-size:14px;color:#49657a;margin:0 0 14px}
+.contact-panel{border:1px solid #c8e1e6;border-radius:11px;background:#f7fbfc;overflow:hidden}
+.contact-panel>summary{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;list-style:none;color:#0b6178;font-weight:750;font-size:14px}
+.contact-panel>summary::-webkit-details-marker{display:none}
+.contact-panel>summary span{font-size:20px;line-height:1;transition:transform .15s}
+.contact-panel[open]>summary span{transform:rotate(90deg)}
+.contact-panel[open]>summary{border-bottom:1px solid #dbe9ee}
+.contact-form{padding:14px;gap:9px}
+.contact-form label{font-size:13px;font-weight:700;color:#27526b}
+.contact-form .field{font-size:16px;margin:0}
+.contact-form textarea{resize:vertical;min-height:125px}
+.contact-form button{align-self:flex-start;margin-top:5px}
+.contact-form .section-note{font-size:12px;line-height:1.55;margin:0}
+.contact-email{display:inline-block;margin-top:13px;color:#0b6178;font-size:12px;text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+.contact-panel>summary:focus-visible,.contact-email:focus-visible{outline:3px solid #00acb7;outline-offset:2px}
