@@ -150,7 +150,7 @@ export function mountNotifications(container,user,profile){
   '<button class="button outline" type="button" id="enablePush" disabled>Enable Phone Alerts</button>'+
   '<p class="section-note">On iPhone: open PMBC from its Home Screen icon to allow notifications. This is optional.</p></section>'+
   '<h2>Inbox</h2><div id="notification-items" aria-live="polite"><p class="muted">Loading…</p></div>'+
-  '<p class="section-note">Automatic event, prayer, and Serve reminders are not scheduled yet.</p>';
+  '<p class="section-note">Event and Serve reminders become automatic after Firebase Functions deployment. Prayer reminder timing is not configured yet.</p>';
  root.addEventListener("click",click);
  checkPushSupport();
  root.querySelector("#notificationForm")?.addEventListener("submit",submit);
