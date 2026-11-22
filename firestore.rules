@@ -103,6 +103,31 @@ service cloud.firestore {
       }
     }
 
+    match /ministries/{ministryId} {
+      // Only approved members can discover church ministries.
+      allow get, list: if approvedMember();
+
+      // Only an approved administrator can create a ministry.
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly([
+          'name','description','active','createdBy','createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'name','description','active','createdBy','createdAt'
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 500
+        && request.resource.data.active == true
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+
+      // Ministry editing, delegated leaders and scheduling are later steps.
+      allow update, delete: if false;
+    }
+
     // No access to other collections until they have dedicated rules.
     match /{document=**} { allow read, write: if false; }
   }
