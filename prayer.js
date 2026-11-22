@@ -218,64 +218,108 @@ function resetEdit(){
  const form=currentRoot?.querySelector("#prayerForm");
  if(!form)return;
  form.reset();
- form.querySelector("[name=status]").value="active";
- currentRoot.querySelector("#prayerFormTitle").textContent="Share a Prayer Request";
+ const subject=form.elements.namedItem("subjectName");
+ subject.disabled=false;
+ subject.required=true;
+ form.elements.namedItem("status").value="active";
  currentRoot.querySelector("#savePrayer").textContent="Post Prayer Request";
  currentRoot.querySelector("#cancelPrayerEdit").hidden=true;
  currentRoot.querySelector("#prayerStatusSection").hidden=true;
+ currentRoot.querySelector("#prayerComposer").open=false;
+}
+function toggleUnspoken(){
+ const form=currentRoot?.querySelector("#prayerForm");
+ if(!form)return;
+ const input=form.elements.namedItem("subjectName");
+ const checked=form.elements.namedItem("unspoken").checked;
+ input.disabled=checked;
+ input.required=!checked;
+ if(checked)input.value="";
+ input.placeholder=checked?"Unspoken":"Enter a name";
 }
 async function submitPrayer(e){
  e.preventDefault();
  if(!canSeePrivate()||busy)return;
  const f=e.currentTarget;
- const text=String(f.elements.text.value).trim();
- const visibility=f.elements.visibility.value;
- const status=f.elements.status.value;
- if(text.length<3||text.length>2000){setNotice("Please enter a request between 3 and 2,000 characters.",true);return;}
- if(!["members","leadership"].includes(visibility)){setNotice("Choose who can view the request.",true);return;}
+ const text=String(f.elements.namedItem("text").value).trim();
+ const visibility=f.elements.namedItem("visibility").value;
+ const status=f.elements.namedItem("status").value;
+ const unspoken=f.elements.namedItem("unspoken").checked;
+ const subjectName=unspoken?"Unspoken":String(f.elements.namedItem("subjectName").value).trim();
+ if(subjectName.length<2||subjectName.length>80){
+   setNotice("Enter a name or check Unspoken.",true);return;
+ }
+ if(text.length<3||text.length>2000){
+   setNotice("Please enter a request between 3 and 2,000 characters.",true);return;
+ }
+ if(!["members","leadership"].includes(visibility)){
+   setNotice("Choose who can view the request.",true);return;
+ }
+ if(activeEdit&&!["active","answered","removed"].includes(status)){
+   setNotice("Choose a valid request status.",true);return;
+ }
  busy=true;
  const btn=currentRoot.querySelector("#savePrayer");btn.disabled=true;
  try{
    if(activeEdit){
      await updateDoc(doc(db,"prayers",activeEdit),{
-       text,visibility,status,updatedAt:serverTimestamp()
+       text,subjectName,visibility,status,updatedAt:serverTimestamp()
      });
-     resetEdit();setNotice("Your prayer request was updated.");
+     resetEdit();
+     setNotice(status==="active"?"Your prayer request was updated.":"Request removed from the active prayer list.");
    }else{
      await addDoc(collection(db,"prayers"),{
-       text,visibility,status:"active",authorId:currentUser.uid,
+       text,subjectName,visibility,status:"active",authorId:currentUser.uid,
        authorName:currentProfile.displayName,
        createdAt:serverTimestamp(),updatedAt:serverTimestamp()
      });
-     resetEdit();setNotice("Your prayer request was posted.");
+     resetEdit();
+     setNotice("Your prayer request was posted to the prayer list.");
    }
- }catch(err){setNotice("Couldn't save the request ("+(err.code||"unknown error")+"). Check your connection and Firestore rules.",true);}
- finally{busy=false;if(btn?.isConnected)btn.disabled=false;}
+ }catch(err){
+   setNotice("Couldn't save the request ("+(err.code||"unknown error")+
+     "). Check your connection and Firestore rules.",true);
+ }finally{busy=false;if(btn?.isConnected)btn.disabled=false;}
 }
 async function markPrayed(id){
- if(busy||!requestsById.has(id)||!canSeePrivate())return;
+ const request=requestsById.get(id);
+ if(busy||request?.status!=="active"||!canSeePrivate())return;
  busy=true;
  const previous=Boolean(prayed.get(id));
- prayed.set(id,!previous);drawList();
+ prayed.set(id,true);drawList();
  try{
    const vote=doc(db,"prayers",id,"prayedBy",currentUser.uid);
-   if(previous)await deleteDoc(vote);
-   else await setDoc(vote,{createdAt:serverTimestamp()});
- }catch(err){prayed.set(id,previous);setNotice("Couldn't update your prayer acknowledgement ("+(err.code||"network error")+").",true);}
- finally{busy=false;drawList();}
+   const existing=await getDoc(vote);
+   if(existing.exists()){
+     const previousCount=Number.isInteger(existing.data().count)?existing.data().count:1;
+     await updateDoc(vote,{count:previousCount+1,lastPrayedAt:serverTimestamp()});
+   }else{
+     await setDoc(vote,{count:1,createdAt:serverTimestamp()});
+   }
+   setNotice("Thank you for praying. Your prayer has been recorded.");
+ }catch(err){
+   prayed.set(id,previous);
+   setNotice("Couldn't record your prayer ("+(err.code||"network error")+
+     "). Confirm the updated Firestore rules are published.",true);
+ }finally{busy=false;drawList();}
 }
 function edit(id){
  const p=requestsById.get(id);
  if(!p||!(p.authorId===currentUser.uid||isAdmin()))return;
  activeEdit=id;
  const f=currentRoot.querySelector("#prayerForm");
- f.elements.text.value=p.text;
- f.elements.visibility.value=p.visibility;
- f.elements.status.value=p.status;
- currentRoot.querySelector("#prayerFormTitle").textContent="Update Prayer Request";
+ const name=p.subjectName||p.authorName||"Church Member";
+ const unspoken=name==="Unspoken";
+ f.elements.namedItem("unspoken").checked=unspoken;
+ f.elements.namedItem("subjectName").value=unspoken?"":name;
+ toggleUnspoken();
+ f.elements.namedItem("text").value=p.text;
+ f.elements.namedItem("visibility").value=p.visibility;
+ f.elements.namedItem("status").value=p.status;
  currentRoot.querySelector("#savePrayer").textContent="Save Changes";
  currentRoot.querySelector("#cancelPrayerEdit").hidden=false;
  currentRoot.querySelector("#prayerStatusSection").hidden=false;
+ currentRoot.querySelector("#prayerComposer").open=true;
  currentRoot.querySelector("#prayerComposer").scrollIntoView({behavior:"smooth",block:"start"});
 }
 function handleClick(e){
