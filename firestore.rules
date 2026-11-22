@@ -124,8 +124,50 @@ service cloud.firestore {
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt == request.time;
 
-      // Ministry editing, delegated leaders and scheduling are later steps.
+      // Ministry editing and delegated leader roles are later steps.
       allow update, delete: if false;
+
+      match /positions/{positionId} {
+        allow get, list: if approvedMember();
+        allow create: if isAdmin()
+          && request.resource.data.keys().hasOnly([
+            'title','description','active','createdBy','createdAt'
+          ])
+          && request.resource.data.keys().hasAll([
+            'title','description','active','createdBy','createdAt'
+          ])
+          && request.resource.data.title is string
+          && request.resource.data.title.size() >= 2
+          && request.resource.data.title.size() <= 80
+          && request.resource.data.description is string
+          && request.resource.data.description.size() <= 500
+          && request.resource.data.active == true
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.createdAt == request.time
+          && exists(/databases/$(database)/documents/ministries/$(ministryId))
+          && get(/databases/$(database)/documents/ministries/$(ministryId)).data.active == true;
+        allow update, delete: if false;
+
+        match /signups/{memberId} {
+          // A volunteer can view only their own signup; admins may review all.
+          allow get: if approvedMember()
+            && (request.auth.uid == memberId || isAdmin());
+          allow list: if isAdmin();
+          allow create: if approvedMember()
+            && request.auth.uid == memberId
+            && exists(/databases/$(database)/documents/ministries/$(ministryId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)).data.active == true
+            && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)).data.active == true
+            && request.resource.data.keys().hasOnly(['memberId','memberName','createdAt'])
+            && request.resource.data.keys().hasAll(['memberId','memberName','createdAt'])
+            && request.resource.data.memberId == request.auth.uid
+            && request.resource.data.memberName == get(userPath(request.auth.uid)).data.displayName
+            && request.resource.data.createdAt == request.time;
+          allow delete: if approvedMember() && request.auth.uid == memberId;
+          allow update: if false;
+        }
+      }
     }
 
     // No access to other collections until they have dedicated rules.
