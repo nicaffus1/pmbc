@@ -34,10 +34,10 @@ Firestore security enforces membership and prayer audience; hiding an item in th
 - Approved administrators can create real church ministries through Serve.
 - Approved members can view ministry names and descriptions; pending accounts cannot read ministries.
 - Before the new Serve screen can save or display ministries, publish the updated `firestore.rules` in Firebase Console → Firestore Database → Rules. GitHub changes do not publish Firebase permissions.
-- This phase intentionally does **not** yet support shifts, volunteer sign-ups, ministry leader delegation, or editing ministries. We'll add those progressively with corresponding database rules.
+- Administrators can now add volunteer positions under ministries; approved members can join and leave a position (ongoing interest, not a dated shift). Signups are stored at `ministries/{ministryId}/positions/{positionId}/signups/{memberUid}`. Ordinary members can only read or write their own signup; admins can review the signup documents in Firebase.\n- Publish the latest `firestore.rules` before using the new position and signup controls. Recheck that existing prayer and membership features remain available.\n- The next phases will add dated shifts, approval options, leaders scoped to their ministries, volunteer lists, and notifications.
 
 ## Known limitations / next work
-- Events, announcements, giving link, and ministry volunteer schedules still need to be built; the ministry directory itself is implemented.
+- Events, announcements, giving link, and dated volunteer schedules still need to be built; ministries, positions, and self-signups are implemented.
 - Google Sign-In isn't yet wired into the UI (email/password is supported).
 - Public announcements and events are currently empty-state placeholders.
 - Scheduled reminders require a secure server-side scheduler and notification permission.
