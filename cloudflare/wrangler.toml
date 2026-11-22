@@ -1,0 +1,7 @@
+name = "pmbc-push-sender"
+main = "worker.js"
+compatibility_date = "2026-11-22"
+
+# After you deploy, copy the *.workers.dev URL into ../push-sender-config.js.
+# Add Firebase service-account JSON only as a Cloudflare encrypted secret:
+# wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON
