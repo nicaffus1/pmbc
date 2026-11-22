@@ -648,21 +648,25 @@ export function mountServe(container,user,userProfile){
  root.innerHTML=`<span class="eyebrow">Get involved</span><h1>Serve</h1>
  <p class="muted">Find a ministry and sign up for a scheduled shift.</p>
  <div id="serveMessage" hidden></div>
+ <p class="section-note" id="serveBuildVersion">Serve build: 2026-11-21.12</p>
  ${admin()?`<section class="card" id="ministryComposer">
   <h2>Create a Ministry</h2>
-  <form id="ministryForm" class="stack">
+  <form id="ministryForm" class="stack" novalidate>
    <label for="ministryName">Ministry name</label>
    <input class="field" id="ministryName" name="ministryName" minlength="2" maxlength="80" required>
    <label for="ministryDescription">Description (optional)</label>
    <textarea class="field" id="ministryDescription" name="ministryDescription" rows="3" maxlength="500"></textarea>
-   <button class="button" type="submit">Add Ministry</button>
+   <button class="button" type="button" id="addMinistryButton">Add Ministry</button>
   </form>
  </section>`:""}
  <h2>Church Ministries</h2>
  <label class="ministry-picker-label" for="ministryPicker">Select a ministry</label>
  <select class="field" id="ministryPicker"><option value="">Choose a ministry…</option></select>
  <div id="ministriesList" aria-live="polite"><p class="muted">Loading ministries…</p></div>`;
- root.querySelector("#ministryForm")?.addEventListener("submit",addMinistry);
+ root.querySelector("#addMinistryButton")?.addEventListener("click",event=>{
+   const form=event.currentTarget.closest("#ministryForm");
+   if(form)addMinistry({preventDefault(){},currentTarget:form});
+ });
  root.addEventListener("submit",onSubmit);
  root.addEventListener("click",onClick);
  root.addEventListener("change",onChange);
