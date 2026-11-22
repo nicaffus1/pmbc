@@ -48,11 +48,11 @@ function baseScreen(){
        <option value="leadership">Church leadership only</option>
      </select>
      <p class="section-note">For now, leadership-only requests can be viewed by you and approved PMBC administrators. Ministry leaders do not automatically receive prayer access.</p>
-     <label for="requestStatus">Request status</label>
+     <div id="prayerStatusSection" hidden><label for="requestStatus">Request status</label>
      <select class="field" name="status" id="requestStatus">
        <option value="active">Prayer needed</option>
        <option value="answered">Answered / Update</option>
-     </select>
+     </select></div>
      <div class="button-row">
        <button class="button" id="savePrayer" type="submit">Post Prayer Request</button>
        <button class="button outline" id="cancelPrayerEdit" type="button" hidden>Cancel Editing</button>
@@ -147,6 +147,7 @@ function resetEdit(){
  currentRoot.querySelector("#prayerFormTitle").textContent="Share a Prayer Request";
  currentRoot.querySelector("#savePrayer").textContent="Post Prayer Request";
  currentRoot.querySelector("#cancelPrayerEdit").hidden=true;
+ currentRoot.querySelector("#prayerStatusSection").hidden=true;
 }
 async function submitPrayer(e){
  e.preventDefault();
@@ -199,6 +200,7 @@ function edit(id){
  currentRoot.querySelector("#prayerFormTitle").textContent="Update Prayer Request";
  currentRoot.querySelector("#savePrayer").textContent="Save Changes";
  currentRoot.querySelector("#cancelPrayerEdit").hidden=false;
+ currentRoot.querySelector("#prayerStatusSection").hidden=false;
  currentRoot.querySelector("#prayerComposer").scrollIntoView({behavior:"smooth",block:"start"});
 }
 function handleClick(e){
