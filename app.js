@@ -136,7 +136,7 @@ function notifications(){
  return '<div id="notifications-root"></div>';
 }
 function videos(){
- return `<div class="videos-page"><h1>Church Videos</h1>
+ return `<div class="videos-page"><span class="eyebrow">Sermons &amp; Messages</span><h1>Church Videos</h1>
  <p class="muted">Latest uploads from Providence on YouTube.</p>
  <div id="videos-page-list"><p class="muted">Loading videos…</p></div></div>`;
 }
@@ -170,7 +170,7 @@ function accountPage() {
  </div>`;
 }
 function more() {
- return `<h1>More</h1>
+ return `<span class="eyebrow">Connect &amp; Support</span><h1>More</h1>
  ${givingCard()}
  ${contactUs()}
  ${churchInfo()}`;
