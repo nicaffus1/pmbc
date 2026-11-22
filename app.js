@@ -39,6 +39,48 @@ function givingCard(compact=false){
    <p class="section-note">Givelify opens separately. PMBC does not collect or store your payment information.</p>
   </section>`;
 }
+function contactUs(){
+ return `<section class="card contact-card" aria-label="Contact Providence">
+  <h2>Contact Us</h2>
+  <p>Have a question or something you'd like to share? Send the church a message.</p>
+  <details class="contact-panel"><summary>Write a message <span aria-hidden="true">›</span></summary>
+   <form id="contactForm" class="stack contact-form">
+    <label for="contactTopic">What would you like to talk about?</label>
+    <select class="field" id="contactTopic" name="topic" required>
+     <option value="">Choose a topic</option>
+     <option>General question</option>
+     <option>Prayer request</option>
+     <option>Talk with the pastor</option>
+     <option>Visiting the church</option>
+     <option>Church services or events</option>
+     <option>Serving or volunteering</option>
+     <option>Giving or donations</option>
+     <option value="Something else">Something else</option>
+    </select>
+    <label for="contactName">Your name (optional)</label>
+    <input class="field" id="contactName" name="name" maxlength="80" autocomplete="name" placeholder="Your name">
+    <label for="contactMessage">Your message</label>
+    <textarea class="field" id="contactMessage" name="message" rows="5" minlength="5" maxlength="3000" placeholder="Write your message here..." required></textarea>
+    <button class="button" type="submit">Continue to email</button>
+    <p class="section-note">Your email app will open with your message ready to send to church@providence.center. Review and tap Send there to deliver it. PMBC does not save this form.</p>
+   </form>
+  </details>
+  <a class="contact-email" href="mailto:church@providence.center">Or email church@providence.center directly</a>
+ </section>`;
+}
+function submitContact(event){
+ event.preventDefault();
+ const form=event.currentTarget;
+ if(!form.reportValidity())return;
+ const topic=String(form.elements.namedItem("topic").value||"").trim();
+ const name=String(form.elements.namedItem("name").value||"").trim();
+ const message=String(form.elements.namedItem("message").value||"").trim();
+ if(!topic||message.length<5)return;
+ const subject="PMBC Contact: "+topic;
+ const body=(name?"From: "+name+"\n\n":"")+"Topic: "+topic+"\n\n"+message;
+ const url="mailto:church@providence.center?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+ window.location.href=url;
+}
 function churchInfo(){
  return `<section class="card church-info" aria-label="Church information">
    <h2>Providence Missionary Baptist Church</h2>
@@ -130,6 +172,7 @@ function accountPage() {
 function more() {
  return `<span class="eyebrow">Church community</span><h1>More</h1>
  ${givingCard()}
+ ${contactUs()}
  ${churchInfo()}`;
 }
 function adminView() {
@@ -167,6 +210,7 @@ function render(){
  document.title="PMBC — "+section[0].toUpperCase()+section.slice(1);
  screen.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{location.hash=b.dataset.go;}));
  screen.querySelectorAll("[data-authmode]").forEach(b=>b.addEventListener("click",()=>{authMode=b.dataset.authmode;accountError="";render()}));
+ screen.querySelector("#contactForm")?.addEventListener("submit",submitContact);
  const af=screen.querySelector("#authForm");
  if(af)af.addEventListener("submit",submitAuth);
  screen.querySelector("#signOut")?.addEventListener("click",async()=>{await signOut(auth);review=null;accountError="";});
