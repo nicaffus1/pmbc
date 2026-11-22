@@ -462,3 +462,16 @@ html.dark-mode{color-scheme:dark;background:#0b1420;color:#e3edf5}
 .dark-mode .video-thumbnail,.dark-mode .facebook-post-photos img{background:#293e51}
 .dark-mode .contact-panel>summary,.dark-mode .home-manage>summary,.dark-mode .position-item strong,.dark-mode .prayer-entry strong,.dark-mode .notification-entry strong{color:#e4f2f8}
 .dark-mode .giving-card,.dark-mode .contact-card,.dark-mode .church-info{color:#e4edf5}
+
+/* Sermons: latest message, searchable recent uploads, and archive. */
+.sermon-featured{margin:8px 0 28px}
+.sermon-featured h2,.sermon-library-heading h2,.sermon-archive h2{font-size:19px;margin:0 0 12px}
+.sermon-featured .video-grid{grid-template-columns:minmax(0,1fr)}
+.sermon-featured .video-card{max-width:520px}
+.sermon-library-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:8px 0 12px}
+.sermon-library-heading h2{margin:0}
+.sermon-search-label{display:block;font-size:13px;font-weight:700;margin-bottom:7px}
+.sermon-search{display:block;box-sizing:border-box;width:100%;margin-bottom:16px}
+.sermon-archive{margin:25px 0 14px;padding:18px;border:1px solid #e1eaf0;border-radius:13px}
+.sermon-archive p{font-size:13px;line-height:1.5;margin:0 0 12px}
+.dark-mode .sermon-archive{background:#192a3c;border-color:#344b5e}
