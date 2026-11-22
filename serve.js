@@ -1,7 +1,7 @@
 // PMBC Serve — ministry positions and member opt-in, backed by Firestore.
 import { db } from "./firebase.js";
 import {
-  collection, doc, addDoc, setDoc, deleteDoc, updateDoc,
+  collection, doc, addDoc, setDoc, deleteDoc, updateDoc, getDoc,
   onSnapshot, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
@@ -149,6 +149,85 @@ function watchShifts(mid,pid,token){
  },error=>{
    if(token===sequence)notice("Unable to load shifts ("+(error.code||"error")+"). Check the published Firebase rules.",true);
  }));
+}
+
+
+const weekdayNames=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+function datesForSchedule(schedule,count=5){
+ const today=chicagoNow().slice(0,10);
+ const [y,m,d]=today.split("-").map(Number);
+ const utc=new Date(Date.UTC(y,m-1,d));
+ let delta=(schedule.weekday-utc.getUTCDay()+7)%7;
+ if(delta===0&&schedule.endTime<=chicagoNow().slice(11))delta=7;
+ const dates=[];
+ for(let i=0;i<count;i++){
+  const next=new Date(utc.getTime()+(delta+i*7)*86400000);
+  dates.push(next.toISOString().slice(0,10));
+ }
+ return dates;
+}
+function recurringUI(mid,pid){
+ const schedules=[...(recurring.get(positionKey(mid,pid))?.values()||[])].filter(s=>s.active)
+  .sort((a,b)=>a.title.localeCompare(b.title));
+ const cards=schedules.map(schedule=>{
+  const key=recurringKey(mid,pid,schedule.id);
+  const dates=datesForSchedule(schedule,5);
+  const entries=dates.map(date=>{
+   const occurrence=key+"/"+date;
+   const joined=recurringJoined.get(occurrence)===true;
+   const roster=recurringRosters.get(occurrence);
+   const names=roster?.map(v=>"<li>"+esc(v.memberName||"Member")+"</li>").join("")||"";
+   const readable=admin()||schedule.rosterVisibility==="members";
+   const dateText=new Date(date+"T12:00:00").toLocaleDateString("en-US",{
+     weekday:"short",month:"short",day:"numeric"
+   });
+   return `<div class="recurring-occurrence">
+    <strong>${esc(dateText)} · ${esc(schedule.startTime)}–${esc(schedule.endTime)} CT</strong>
+    ${readable?`<div class="shift-roster"><strong>Volunteers (${roster?.length??"…" })</strong>
+     ${roster===undefined?'<p class="muted">Loading volunteers…</p>':roster.length?`<ul>${names}</ul>`:'<p class="muted">No one signed up yet.</p>'}
+    </div>`:"<p class='section-note'>Roster visible to administrators.</p>"}
+    <button class="button ${joined?"outline":""}" type="button" data-recurring-signup
+      data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-rid="${esc(schedule.id)}" data-date="${esc(date)}"
+      ${pendingWrites.has("rec:"+occurrence)?"disabled":""}>
+     ${joined?"✓ Signed Up — Cancel":"Sign Up"}
+    </button>
+   </div>`;
+  }).join("");
+  return `<section class="recurring-card">
+   <h4>${esc(schedule.title)} · Every ${weekdayNames[schedule.weekday]}</h4>
+   <p class="section-note">${esc(schedule.notes||"Regular weekly serving")} · Next five weeks, rolling forward automatically</p>
+   <div class="button-row">
+     <button class="button outline" data-recurring-bulk data-count="4" data-mid="${esc(mid)}"
+      data-pid="${esc(pid)}" data-rid="${esc(schedule.id)}">Volunteer for 4 weeks</button>
+     <button class="button outline" data-recurring-bulk data-count="13" data-mid="${esc(mid)}"
+      data-pid="${esc(pid)}" data-rid="${esc(schedule.id)}">Volunteer for 3 months</button>
+   </div>
+   ${entries}
+   ${admin()?`<button class="button outline" type="button" data-recurring-archive
+     data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-rid="${esc(schedule.id)}">Stop Recurrence</button>`:""}
+  </section>`;
+ }).join("");
+ return `<section class="recurring-section"><h4>Weekly Opportunities</h4>
+ ${cards||'<p class="muted">No recurring schedules yet.</p>'}
+ ${admin()?`<form class="stack recurring-form" data-recurring-form data-mid="${esc(mid)}" data-pid="${esc(pid)}">
+  <label>Schedule title<input class="field" name="title" maxlength="80" minlength="2" required placeholder="Children's Church"></label>
+  <label>Repeats every
+   <select class="field" name="weekday">
+    ${weekdayNames.map((name,index)=>`<option value="${index}">${name}</option>`).join("")}
+   </select></label>
+  <div class="shift-time-row">
+   <label>Start<input class="field" name="start" type="time" required></label>
+   <label>End<input class="field" name="end" type="time" required></label>
+  </div>
+  <label>Instructions<input class="field" name="notes" maxlength="300" placeholder="Where to meet"></label>
+  <label>Volunteer name visibility
+   <select class="field" name="rosterVisibility">
+    <option value="members">Approved members</option>
+    <option value="admins">Administrators only</option>
+   </select></label>
+  <button class="button outline" type="submit">Create Weekly Schedule</button>
+ </form>`:""}
+ </section>`;
 }
 
 function positionUI(mid,entry){
