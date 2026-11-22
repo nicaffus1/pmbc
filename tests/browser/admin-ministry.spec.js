@@ -5,7 +5,7 @@ import {initializeTestEnvironment} from "@firebase/rules-unit-testing";
 import {setDoc,doc} from "firebase/firestore";
 import {readFileSync} from "node:fs";
 
-test("administrator can create a ministry on a phone, view it and reload",async({page},testInfo)=>{
+test("administrator can create ministries, schedule recurring serving and moderate prayers on a phone",async({page},testInfo)=>{
  const email="admin-ui-"+testInfo.project.name+"@pmbc.test",password="TestOnly12345!";
  const response=await fetch("http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-key",{
   method:"POST",
@@ -47,6 +47,45 @@ test("administrator can create a ministry on a phone, view it and reload",async(
   await expect(page.getByRole("heading",{name:"Children's Church"})).toBeVisible();
   await page.reload();
   await expect(page.locator("#ministryPicker")).toContainText("Children's Church");
+  // Step 2: select a ministry and create a volunteer position.
+  await page.locator("#ministryPicker").selectOption({label:"Children's Church"});
+  await page.locator('[data-position-form] [name="title"]').fill("Classroom Helper");
+  await page.locator('[data-position-form] button[type="submit"]').click();
+  await expect(page.locator("#serveMessage")).toContainText("Volunteer position added");
+  await expect(page.getByText("Classroom Helper",{exact:true})).toBeVisible();
+
+  // Step 3: create a reusable weekly Children's Church schedule.
+  await page.locator('[data-recurring-form] [name="title"]').fill("Weekly Children's Church");
+  await page.locator('[data-recurring-form] [name="start"]').fill("09:00");
+  await page.locator('[data-recurring-form] [name="end"]').fill("10:00");
+  await page.locator('[data-recurring-form] button[type="submit"]').click();
+  await expect(page.locator("#serveMessage")).toContainText("Weekly schedule created");
+  await expect(page.locator(".recurring-occurrence")).toHaveCount(5);
+
+  // Step 4: a volunteer can join one occurrence, then all four weeks.
+  await page.locator("[data-recurring-signup]").first().click();
+  await expect(page.locator("#serveMessage")).toContainText("signed up for this date");
+  page.on("dialog",dialog=>dialog.accept());
+  await page.locator('[data-recurring-bulk][data-count="4"]').first().click();
+  await expect(page.locator("#serveMessage")).toContainText("Signed up for");
+
+  // Step 5: archive and restore a position without deleting the history.
+  await page.locator("[data-position-archive]").first().click();
+  await expect(page.locator("#serveMessage")).toContainText("removed from active ministries");
+  await page.locator(".archived-positions summary").first().click();
+  await page.locator("[data-position-restore]").first().click();
+  await expect(page.locator("#serveMessage")).toContainText("Position restored");
+
+  // Step 6: an administrator can remove and restore a test prayer.
+  await page.locator('[data-tab="prayer"]').click();
+  await page.locator("#requestText").fill("Prayer requested for the test event.");
+  await page.locator("#savePrayer").click();
+  await expect(page.locator("#prayerNotice")).toContainText("posted");
+  await page.locator("[data-remove-prayer]").first().click();
+  await expect(page.locator("#prayerNotice")).toContainText("removed from member views");
+  await page.locator("[data-remove-prayer]").first().click();
+  await expect(page.locator("#prayerNotice")).toContainText("restored");
+
   expect(pageErrors).toEqual([]);
  }finally{await env.cleanup();}
 });
