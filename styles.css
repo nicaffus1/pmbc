@@ -65,3 +65,13 @@
 /* Ministry name is already shown in the picker: make selected content compact. */
 .compact-ministry{padding-top:5px}
 .compact-ministry>.position-item:first-child{border-top:0;padding-top:13px}
+
+/* Reversible admin removal — actions remain compact on mobile */
+.remove-control{display:block;margin:11px 0 4px!important;font-size:12px!important;padding:9px 12px!important;color:#865254;border-color:#d9b9bb;background:#fff}
+.remove-ministry{margin-top:14px!important}
+.archive-list{margin-top:12px;border-top:1px solid #e0e9ef;padding-top:10px}
+.archive-list>summary{font-size:13px;font-weight:700;color:#496678;padding:7px 0;cursor:pointer}
+.archive-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef2f5}
+.archive-row span{font-size:13px;overflow-wrap:anywhere;min-width:0}
+.archive-row button{font-size:12px!important;padding:8px 11px!important;flex-shrink:0}
+.archived-ministries{margin:16px 0}
