@@ -348,3 +348,12 @@
 .daily-verse>a span{font-weight:600;color:#647f8b}
 .daily-verse>a:focus-visible{outline:3px solid #009da8;outline-offset:4px}
 @media(max-width:380px){.daily-verse{padding:16px}.daily-verse blockquote{font-size:17px}}
+
+/* PMBC v45 — header notification and account shortcuts. */
+.header-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.account-header-button{width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#f1f8fa;color:#0b586f;border:1px solid #d8e7ec;border-radius:11px;cursor:pointer}
+.account-header-button.active{background:#e0f3f5;border-color:#85c7cf}
+.account-header-button:focus-visible{outline:3px solid #00acb7;outline-offset:2px}
+.account-page{min-height:45vh}
+.account-page h1{margin-bottom:16px}
+@media(max-width:360px){.top{padding-left:13px;padding-right:13px}.header-actions{gap:5px}}
