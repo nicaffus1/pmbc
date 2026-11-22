@@ -300,3 +300,23 @@
 .notification-preferences-body .section-note{font-size:12px;line-height:1.5}
 .notification-preferences .push-token-panel{margin-top:10px}
 @media(max-width:380px){.notification-filter button{padding:8px 9px}.notification-actions .button{padding:8px 10px}}
+
+/* PMBC latest YouTube uploads — responsive sermon gallery. */
+.home-video-section{margin:26px 0 8px}
+.home-video-section .home-heading{margin:0 0 13px;align-items:baseline}
+.home-video-section .home-heading h2{margin:0}
+.video-top-link,.video-more-link,.video-back{color:#0b6178;text-decoration:none;font-size:13px;font-weight:750}
+.video-top-link:focus-visible,.video-more-link:focus-visible,.video-back:focus-visible,.video-card:focus-visible{outline:3px solid #009dab;outline-offset:3px}
+.video-more-link{display:inline-flex;margin:14px 0 4px}
+.video-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.video-card{border:1px solid #e1eaf0;border-radius:12px;overflow:hidden;background:#fff;color:inherit;text-decoration:none;min-width:0;box-shadow:0 1px 4px #153f5810}
+.video-thumbnail{position:relative;aspect-ratio:16/9;background:#dbe6eb;overflow:hidden}
+.video-thumbnail img{height:100%;width:100%;object-fit:cover;display:block}
+.video-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;justify-content:center;align-items:center;border-radius:50%;height:35px;width:35px;background:#0a283bbd;color:white;font-size:13px;padding-left:2px}
+.video-info{display:flex;flex-direction:column;gap:6px;padding:11px}
+.video-info strong{font-size:13px;line-height:1.38;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.video-info span{font-size:11px;color:#708397}
+.videos-page>h1{margin:14px 0 4px}
+.videos-page>.muted{font-size:13px;margin-bottom:19px}
+.videos-page .video-grid{gap:14px}
+@media(max-width:420px){.home-video-section .video-grid{grid-template-columns:1fr}.video-grid{grid-template-columns:1fr 1fr;gap:9px}.video-info{padding:9px}.video-info strong{font-size:12px}}
