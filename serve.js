@@ -402,6 +402,63 @@ async function addShift(event){
    notice("Couldn't add shift ("+(error.code||"error")+"). Check the new Firebase rules.",true);
  }finally{if(button.isConnected)button.disabled=false;}
 }
+async function editPosition(event){
+ event.preventDefault();
+ if(!admin())return;
+ const form=event.target;
+ const {mid,pid}=form.dataset;
+ const existing=positions.get(mid)?.get(pid);
+ if(!ministries.get(mid)?.active||!existing?.active)return;
+ const title=String(form.elements.namedItem("title").value).trim();
+ const description=String(form.elements.namedItem("description").value).trim();
+ if(title.length<2||title.length>80||description.length>500){
+   notice("Position name must be 2–80 characters and description at most 500.",true);return;
+ }
+ const changes={};
+ if(title!==existing.title)changes.title=title;
+ if(description!==(existing.description||""))changes.description=description;
+ if(!Object.keys(changes).length){notice("No changes to save.");return;}
+ const button=form.querySelector('[type="submit"]');
+ button.disabled=true;
+ try{
+   await updateDoc(doc(db,"ministries",mid,"positions",pid),changes);
+   positions.get(mid).set(pid,{...existing,...changes});
+   draw();
+   notice("Volunteer position updated.");
+ }catch(error){
+   notice("Couldn't update position ("+(error.code||"error")+"). The Firebase rules may need publishing.",true);
+ }finally{if(button.isConnected)button.disabled=false;}
+}
+async function editShift(event){
+ event.preventDefault();
+ if(!admin())return;
+ const form=event.target;
+ const {mid,pid,sid}=form.dataset;
+ const existing=shifts.get(positionKey(mid,pid))?.get(sid);
+ if(!ministries.get(mid)?.active||!positions.get(mid)?.get(pid)?.active||!existing?.active)return;
+ const startsAt=form.elements.namedItem("date").value+"T"+form.elements.namedItem("start").value;
+ const notes=String(form.elements.namedItem("notes").value).trim();
+ let endsAt;
+ try{endsAt=shiftEnd(startsAt);}
+ catch(error){notice(error.message,true);return;}
+ if(notes.length>300){notice("Notes must be 300 characters or fewer.",true);return;}
+ const changes={};
+ if(startsAt!==existing.startsAt)changes.startsAt=startsAt;
+ if(endsAt!==existing.endsAt)changes.endsAt=endsAt;
+ if(notes!==(existing.notes||""))changes.notes=notes;
+ if(!Object.keys(changes).length){notice("No changes to save.");return;}
+ const button=form.querySelector('[type="submit"]');
+ button.disabled=true;
+ try{
+   await updateDoc(doc(db,"ministries",mid,"positions",pid,"shifts",sid),changes);
+   shifts.get(positionKey(mid,pid)).set(sid,{...existing,...changes});
+   draw();
+   notice("Shift updated. Existing volunteer sign-ups were preserved.");
+ }catch(error){
+   notice("Couldn't update shift ("+(error.code||"error")+"). The Firebase rules may need publishing.",true);
+ }finally{if(button.isConnected)button.disabled=false;}
+}
+
 async function toggleShift(button){
  if(!approved())return;
  const mid=button.dataset.mid,pid=button.dataset.pid,sid=button.dataset.sid;
@@ -530,7 +587,9 @@ function onClick(event){
 function onSubmit(event){
  if(event.target.matches("#ministryForm")){addMinistry(event);return;}
  if(event.target.matches("[data-position-form]")){addPosition(event);return;}
- if(event.target.matches("[data-shift-form]"))addShift(event);
+ if(event.target.matches("[data-shift-form]")){addShift(event);return;}
+ if(event.target.matches("[data-edit-position-form]")){editPosition(event);return;}
+ if(event.target.matches("[data-edit-shift-form]"))editShift(event);
 }
 export function unmountServe(){
  sequence++;
