@@ -1,7 +1,7 @@
 // PMBC live member access. Registration remains disabled until Firestore rules are published.
 import { auth, db } from "./firebase.js";
 import { mountPrayer, unmountPrayer } from "./prayer.js";
-import { mountServe, unmountServe } from "./serve.js?v=20261121-12";
+import { mountServe, unmountServe } from "./serve.js?v=rebuild-v2.1";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification
