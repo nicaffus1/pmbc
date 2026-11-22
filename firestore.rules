@@ -84,6 +84,24 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Each approved member may register only their own FCM device token.
+    // Raw tokens are never readable by other members or admins through client SDK.
+    match /users/{userId}/pushTokens/{tokenId} {
+      function validToken(data) {
+        return data.keys().hasOnly(['token','enabled','platform','updatedAt'])
+          && data.keys().hasAll(['token','enabled','platform','updatedAt'])
+          && data.token is string && data.token.size() >= 20 && data.token.size() <= 4096
+          && data.enabled == true
+          && data.platform == 'web'
+          && data.updatedAt == request.time
+          && tokenId.matches('^[a-f0-9]{64}$');
+      }
+      allow get, list: if approvedMember() && request.auth.uid == userId;
+      allow create, update: if approvedMember() && request.auth.uid == userId
+        && validToken(request.resource.data);
+      allow delete: if approvedMember() && request.auth.uid == userId;
+    }
+
     match /users/{userId}/notificationReads/{notificationId} {
       allow get, list: if signedIn() && request.auth.uid == userId
         && approvedMember();
