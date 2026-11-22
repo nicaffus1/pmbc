@@ -190,41 +190,41 @@ export function mountNotifications(container,user,profile){
    '<p class="notice">Sign in with an approved church account to see notifications.</p>';
   return;
  }
- root.innerHTML='<span class="eyebrow">PMBC Community</span><h1>Notifications</h1>'+
-  '<p class="muted">Announcements and reminders sent to your church inbox.</p>'+
+ root.innerHTML='<h1>Notifications</h1>'+
+  '<p class="muted">Updates from your church, all in one place.</p>'+
   '<div id="notificationMessage" hidden></div>'+
-  (admin?'<details class="card notification-composer"><summary>+ Send notification</summary>'+
+  (admin?'<details class="card notification-composer"><summary>+ New notification</summary>'+
    '<form class="stack" id="notificationForm">'+
-   '<label>Title<input class="field" name="title" minlength="2" maxlength="100" required></label>'+
-   '<label>Message<textarea class="field" name="body" rows="3" minlength="3" maxlength="500" required></textarea></label>'+
-   '<label>Audience<select class="field" name="audience"><option value="members">All approved members (including admins)</option>'+
+   '<label>Title<input class="field" name="title" minlength="2" maxlength="100" placeholder="e.g. Church fellowship this Sunday" required></label>'+
+   '<label>Message<textarea class="field" name="body" rows="3" minlength="3" maxlength="500" placeholder="What would you like everyone to know?" required></textarea></label>'+
+   '<label>Send to<select class="field" name="audience"><option value="members">All approved members</option>'+
    '<option value="admins">Administrators only</option></select></label>'+
-   '<label>Category<select class="field" name="kind"><option value="general">General</option>'+
+   '<details class="notification-more-options"><summary>More options</summary><label>Category<select class="field" name="kind"><option value="general">General</option>'+
    '<option value="event">Upcoming event</option><option value="prayer">Prayer reminder</option>'+
    '<option value="serve">Serve opportunity</option><option value="admin">Administration</option></select></label>'+
    '<label>Open page (optional)<select class="field" name="linkTab">'+
    '<option value="">No link</option><option value="home">Home</option>'+
    '<option value="prayer">Prayer</option><option value="serve">Serve</option>'+
-   '<option value="more">More</option></select></label>'+
-   '<button class="button" type="submit">'+(senderConfigured()?'Publish & Send Phone Alerts':'Publish to Inbox')+'</button>'+
-   '<p class="section-note">'+(senderConfigured()?'Phone pushes go to opted-in devices through the secure Cloudflare Worker.':'Cloudflare phone sender is not connected. This will publish to the inbox only.')+'</p>'+
+   '<option value="more">More</option></select></label></details>'+
+   '<button class="button" type="submit">'+(senderConfigured()?'Send notification':'Post to inbox')+'</button>'+
+   (!senderConfigured()?'<p class="section-note">Phone delivery is unavailable. This will be saved to the inbox only.</p>':'')+
    '</form></details>':"")+
-  '<section class="card push-permission"><h2>Phone Alerts</h2>'+
-  '<p id="pushSetupStatus" class="section-note">Checking push support…</p>'+
-  '<button class="button outline" type="button" id="enablePush" disabled>Enable Phone Alerts</button>'+
-  '<p class="section-note">On iPhone: open PMBC from its Home Screen icon to allow notifications. This is optional.</p>'+
+  '<section class="notification-inbox-section"><div class="notification-inbox-heading"><div><h2>Inbox</h2><p id="notificationCount" class="section-note">Loading…</p></div>'+
+  '<div class="notification-filter" role="group" aria-label="Filter notifications">'+
+  '<button type="button" class="selected" data-notification-filter="all" aria-pressed="true">All</button>'+
+  '<button type="button" data-notification-filter="unread" aria-pressed="false">Unread</button></div></div>'+
+  '<div id="notification-items" aria-live="polite"><p class="muted">Loading notifications…</p></div></section>'+
+  '<details class="card notification-preferences"><summary>Phone notification settings</summary>'+
+  '<div class="notification-preferences-body"><p id="pushSetupStatus" class="section-note">Checking this device…</p>'+
+  '<button class="button outline" type="button" id="enablePush" disabled>Enable phone alerts on this device</button>'+
+  '<p class="section-note">On iPhone, open PMBC from its Home Screen icon to allow notifications.</p>'+
+  '<details class="notification-more-options"><summary>Advanced: device token</summary>'+
   '<div id="pushTokenPanel" class="push-token-panel" hidden>'+
-   '<label for="pushDeviceToken">Your device registration token (keep private)</label>'+
-   '<textarea class="field" id="pushDeviceToken" rows="3" readonly></textarea>'+
-   '<button class="button outline" type="button" id="copyPushToken">Copy my device token</button>'+
-   '<p class="section-note">Use this token in Firebase Messaging > Send test message. Each phone has its own token; never publish token lists on the church website.</p>'+
-  '</div></section>'+
-  '<h2>Inbox</h2><div id="notification-items" aria-live="polite"><p class="muted">Loading…</p></div>'+
-  '<p class="section-note">Manual administrator phone push uses Cloudflare after setup. Scheduled reminders remain disabled.</p>'+
-  (admin?'<div class="card manual-push-admin"><strong>Send a phone notification</strong>'+
-   '<p class="section-note">'+(senderConfigured()?'Phone alerts are connected. Publish a notice above to send to registered devices.':'Deploy the free Cloudflare Worker and set its URL in push-sender-config.js to enable phone alerts here.')+'</p>'+
-   '<a class="button outline" href="https://console.firebase.google.com/project/pmbc-d6d17/messaging" target="_blank" rel="noopener noreferrer">Open Firebase Messaging</a>'+
-   '<p class="section-note">Create a notification campaign, or choose Send test message and paste a member\'s device token.</p></div>':"");
+  '<label for="pushDeviceToken">Private device registration token</label>'+
+  '<textarea class="field" id="pushDeviceToken" rows="3" readonly></textarea>'+
+  '<button class="button outline" type="button" id="copyPushToken">Copy device token</button></div>'+
+  '<p class="section-note">For troubleshooting only. Keep this token private.</p></details>'+
+  '</div></details>';
  root.addEventListener("click",click);
  checkPushSupport();
  root.querySelector("#notificationForm")?.addEventListener("submit",submit);
