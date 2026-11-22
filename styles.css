@@ -94,3 +94,18 @@
 .add-shift-control{background:#f6fafc;margin-top:13px}
 .remove-control{margin:0!important}
 .archive-list{margin-top:12px}
+
+/* Compact expandable volunteer positions */
+.position-dropdown{border:1px solid #dce7ee;border-radius:13px;padding:0;margin:11px 0;background:#fff;overflow:hidden}
+.compact-ministry>.position-dropdown:first-child{border:1px solid #dce7ee;padding:0}
+.position-dropdown-summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 13px;list-style:none}
+.position-dropdown-summary::-webkit-details-marker{display:none}
+.position-dropdown-summary::after{content:"⌄";font-size:23px;line-height:1;color:#5f788d;flex-shrink:0;transition:transform .15s}
+.position-dropdown[open]>.position-dropdown-summary::after{transform:rotate(180deg)}
+.position-dropdown-name{font-size:15px;font-weight:700;color:#173c5e;flex:1;min-width:0;overflow-wrap:anywhere}
+.position-dropdown-count{font-size:11px;color:#607388;white-space:nowrap}
+.position-dropdown-content{border-top:1px solid #e6edf2;padding:13px}
+.position-dropdown-content>.position-description{margin:0 0 13px;font-size:13px;color:#435c72}
+.position-dropdown-content>.shift-list{margin-top:9px}
+.position-dropdown-summary:focus-visible{outline:3px solid #00acb7;outline-offset:-3px}
+@media(max-width:380px){.position-dropdown-summary{flex-wrap:wrap}.position-dropdown-count{margin-left:auto}}
