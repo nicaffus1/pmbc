@@ -9,6 +9,7 @@ import {
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let root=null,uid="",admin=false,approved=false,seq=0,stops=[];
 let notices=new Map(),reads=new Map(),streams=new Map(),message="",error=false,waiting=false;
+let deviceToken="";
 const labels={general:"General",event:"Event",prayer:"Prayer",serve:"Serve",admin:"Administration"};
 function visibleRecords(){
  const merged=new Map();
@@ -60,7 +61,7 @@ async function submit(event){
    title,body,audience,kind,linkTab,active:true,createdBy:uid,createdAt:serverTimestamp()
   });
   f.reset();f.closest("details").open=false;
-  setMessage("Notification published to the inbox. Enabled devices receive push after backend deployment.");
+  setMessage("Published to the in-app inbox. To send a phone push on the free plan, use Firebase Messaging separately.");
  }catch(e){setMessage("Could not publish notification ("+(e.code||"error")+"). Publish the updated Firebase rules.",true);}
  finally{waiting=false;if(btn.isConnected)btn.disabled=false;}
 }
@@ -87,7 +88,15 @@ async function registerDevice(){
  const btn=root?.querySelector("#enablePush");
  if(!btn||waiting||!approved)return;
  waiting=true;btn.disabled=true;
- try{setMessage(await enablePush(uid));}
+ try{
+  const result=await enablePush(uid);
+  deviceToken=result.token;
+  const panel=root?.querySelector("#pushTokenPanel");
+  if(panel)panel.hidden=false;
+  const tokenField=root?.querySelector("#pushDeviceToken");
+  if(tokenField)tokenField.value=deviceToken;
+  setMessage(result.message);
+ }
  catch(e){setMessage(e.message||"Unable to register for phone alerts.",true);}
  finally{waiting=false;if(btn.isConnected)btn.disabled=false;}
 }
@@ -103,6 +112,13 @@ function checkPushSupport(){
 }
 function click(event){
  if(event.target.closest("#enablePush")){registerDevice();return;}
+ if(event.target.closest("#copyPushToken")){
+  const value=root?.querySelector("#pushDeviceToken")?.value;
+  if(!value)return;
+  navigator.clipboard.writeText(value).then(()=>setMessage("Device token copied. Paste it into Firebase Messaging > Send test message."))
+    .catch(()=>setMessage("Could not copy automatically. Select and copy the token from the field.",true));
+  return;
+ }
  const read=event.target.closest("[data-mark-read]");
  if(read){markRead(read.dataset.markRead);return;}
  const removeBtn=event.target.closest("[data-notification-remove]");
@@ -114,7 +130,7 @@ export function unmountNotifications(){
  seq++;
  for(const stop of stops){try{stop();}catch{}}
  stops=[];root=null;uid="";approved=false;admin=false;notices=new Map();reads=new Map();
- streams=new Map();message="";error=false;waiting=false;
+ streams=new Map();message="";error=false;waiting=false;deviceToken="";
 }
 export function mountNotifications(container,user,profile){
  unmountNotifications();root=container;uid=user?.uid||"";
@@ -143,14 +159,24 @@ export function mountNotifications(container,user,profile){
    '<option value="prayer">Prayer</option><option value="serve">Serve</option>'+
    '<option value="more">More</option></select></label>'+
    '<button class="button" type="submit">Publish to inbox</button>'+
-   '<p class="section-note">Publishes to the inbox; also sends device alerts once Firebase Cloud Functions are deployed.</p>'+
+   '<p class="section-note">This sends an <strong>in-app message only</strong>. Phone push messages are sent separately through the free Firebase Messaging Console.</p>'+
    '</form></details>':"")+
   '<section class="card push-permission"><h2>Phone Alerts</h2>'+
   '<p id="pushSetupStatus" class="section-note">Checking push support…</p>'+
   '<button class="button outline" type="button" id="enablePush" disabled>Enable Phone Alerts</button>'+
-  '<p class="section-note">On iPhone: open PMBC from its Home Screen icon to allow notifications. This is optional.</p></section>'+
+  '<p class="section-note">On iPhone: open PMBC from its Home Screen icon to allow notifications. This is optional.</p>'+
+  '<div id="pushTokenPanel" class="push-token-panel" hidden>'+
+   '<label for="pushDeviceToken">Your device registration token (keep private)</label>'+
+   '<textarea class="field" id="pushDeviceToken" rows="3" readonly></textarea>'+
+   '<button class="button outline" type="button" id="copyPushToken">Copy my device token</button>'+
+   '<p class="section-note">Use this token in Firebase Messaging > Send test message. Each phone has its own token; never publish token lists on the church website.</p>'+
+  '</div></section>'+
   '<h2>Inbox</h2><div id="notification-items" aria-live="polite"><p class="muted">Loading…</p></div>'+
-  '<p class="section-note">Event and Serve reminders become automatic after Firebase Functions deployment. Prayer reminder timing is not configured yet.</p>';
+  '<p class="section-note">Manual phone push is sent from Firebase Console. Scheduled reminders are disabled in this free-plan setup.</p>'+
+  (admin?'<div class="card manual-push-admin"><strong>Send a phone notification</strong>'+
+   '<p class="section-note">The free option uses Firebase Messaging. Sending an in-app inbox notice above does not also send a phone push.</p>'+
+   '<a class="button outline" href="https://console.firebase.google.com/project/pmbc-d6d17/messaging" target="_blank" rel="noopener noreferrer">Open Firebase Messaging</a>'+
+   '<p class="section-note">Create a notification campaign, or choose Send test message and paste a member\'s device token.</p></div>':"");
  root.addEventListener("click",click);
  checkPushSupport();
  root.querySelector("#notificationForm")?.addEventListener("submit",submit);
