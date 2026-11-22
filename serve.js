@@ -440,6 +440,7 @@ async function editPosition(event){
  try{
    await updateDoc(doc(db,"ministries",mid,"positions",pid),changes);
    positions.get(mid).set(pid,{...existing,...changes});
+   form.closest("details.edit-panel").open=false;
    expandedPanels.delete("edit-position:"+mid+":"+pid);
    draw();
    notice("Volunteer position updated.");
@@ -470,6 +471,7 @@ async function editShift(event){
  try{
    await updateDoc(doc(db,"ministries",mid,"positions",pid,"shifts",sid),changes);
    shifts.get(positionKey(mid,pid)).set(sid,{...existing,...changes});
+   form.closest("details.edit-panel").open=false;
    expandedPanels.delete("edit-shift:"+mid+":"+pid+":"+sid);
    draw();
    notice("Shift updated. Existing volunteer sign-ups were preserved.");
