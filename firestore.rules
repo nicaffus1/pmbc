@@ -121,6 +121,62 @@ service cloud.firestore {
       }
     }
 
+    // Church announcements: only active records are public.
+    match /announcements/{announcementId} {
+      function validAnnouncement(data) {
+        return data.keys().hasAll(['title','description','expiresOn','active','createdBy','createdAt'])
+          && data.keys().hasOnly(['title','description','expiresOn','active','createdBy','createdAt'])
+          && data.title is string && data.title.size() >= 2 && data.title.size() <= 100
+          && data.description is string && data.description.size() >= 3
+          && data.description.size() <= 1200
+          && data.expiresOn is string
+          && data.expiresOn.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && data.active is bool;
+      }
+      allow get, list: if resource.data.active == true || isAdmin();
+      allow create: if isAdmin() && validAnnouncement(request.resource.data)
+        && request.resource.data.active == true
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validAnnouncement(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['title','description','expiresOn','active']);
+      allow delete: if false;
+    }
+
+    // Church events: Central Time, with an editable start/end and automatic expiry.
+    match /events/{eventId} {
+      function validEvent(data) {
+        return data.keys().hasAll([
+            'title','description','location','startsAt','endsAt',
+            'timeZone','active','createdBy','createdAt'
+          ])
+          && data.keys().hasOnly([
+            'title','description','location','startsAt','endsAt',
+            'timeZone','active','createdBy','createdAt'
+          ])
+          && data.title is string && data.title.size() >= 2 && data.title.size() <= 100
+          && data.description is string && data.description.size() <= 1200
+          && data.location is string && data.location.size() <= 160
+          && data.startsAt is string
+          && data.startsAt.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$')
+          && data.endsAt is string
+          && data.endsAt.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$')
+          && data.endsAt > data.startsAt
+          && data.timeZone == 'America/Chicago'
+          && data.active is bool;
+      }
+      allow get, list: if resource.data.active == true || isAdmin();
+      allow create: if isAdmin() && validEvent(request.resource.data)
+        && request.resource.data.active == true
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validEvent(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['title','description','location','startsAt','endsAt','active']);
+      allow delete: if false;
+    }
+
     match /ministries/{ministryId} {
       // Only approved members can discover church ministries.
       allow get, list: if approvedMember();
