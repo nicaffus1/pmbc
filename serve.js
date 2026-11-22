@@ -15,6 +15,7 @@ let root=null, account=null, profile=null, sequence=0;
 let stops=[], ministries=new Map(), positions=new Map(), joined=new Map();
 let shifts=new Map(), shiftJoined=new Map(), shiftRosters=new Map();
 let knownPositionListeners=new Set(), knownShiftListeners=new Set(), pendingWrites=new Set();
+let watchedMinistries=new Set();
 let rosterListeners=new Map();
 let selectedMinistry="", recurring=new Map(), recurringJoined=new Map(), recurringRosters=new Map();
 let recurringListeners=new Set(), recurringRostersListeners=new Map();
@@ -332,6 +333,8 @@ function watchSignup(mid,pid,token){
  stops.push(unsub);
 }
 function watchPositions(mid,token){
+ if(watchedMinistries.has(mid))return;
+ watchedMinistries.add(mid);
  const unsub=onSnapshot(collection(db,"ministries",mid,"positions"),snap=>{
    if(sequence!==token)return;
    const records=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
@@ -362,6 +365,7 @@ async function addMinistry(event){
  try{
   const createdId=await createMinistry({name,description,uid:account.uid});
   selectedMinistry=createdId;
+  watchPositions(createdId,sequence);
   form.reset();
   notice("Ministry saved. It should appear selected below.");
  }catch(error){
@@ -567,7 +571,9 @@ function archivePosition(button){setPositionActive(button.dataset.mid,button.dat
 function restorePosition(button){setPositionActive(button.dataset.mid,button.dataset.pid,true);}
 async function onChange(event){
  const ministryPicker=event.target.closest("#ministryPicker");
- if(ministryPicker){selectedMinistry=ministryPicker.value;draw();return;}
+ if(ministryPicker){selectedMinistry=ministryPicker.value;
+  if(selectedMinistry)watchPositions(selectedMinistry,sequence);
+  draw();return;}
  const select=event.target.closest("[data-roster-visibility]");
  if(!select||!admin())return;
  const {mid,pid,sid}=select.dataset;
@@ -612,7 +618,7 @@ export function unmountServe(){
  rosterListeners=new Map();
  stops=[];ministries=new Map();positions=new Map();joined=new Map();
  shifts=new Map();shiftJoined=new Map();shiftRosters=new Map();
- knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();
+ knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();watchedMinistries=new Set();
  selectedMinistry="";recurring=new Map();recurringJoined=new Map();recurringRosters=new Map();
  recurringListeners=new Set();
  for(const stop of recurringRostersListeners.values()){try{stop();}catch{}}
@@ -655,10 +661,9 @@ export function mountServe(container,user,userProfile){
  const token=sequence;
  stops.push(observeMinistries(entries=>{
    if(token!==sequence)return;
-   for(const d of entries){
-     if(d.active && !ministries.has(d.id))watchPositions(d.id,token);
-   }
    ministries=new Map(entries.map(d=>[d.id,d]));
+   if(selectedMinistry && ministries.get(selectedMinistry)?.active)
+     watchPositions(selectedMinistry,token);
    draw();
  },err=>{
    if(token!==sequence)return;
