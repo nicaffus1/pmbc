@@ -20,6 +20,9 @@ let activeEdit = null;
 let busy = false;
 let errors = [];
 let loaded = new Set();
+let selectedPrayerId = "";
+let prayerTotals = new Map();
+let totalListeners = new Map();
 
 function canSeePrivate(){return currentUser && currentProfile?.status === "approved";}
 function isAdmin(){return canSeePrivate() && currentProfile.role === "admin";}
@@ -34,61 +37,104 @@ function formatDate(timestamp){
 function escapeRequestText(text){return esc(text).replace(/\n/g,"<br>");}
 
 function baseScreen(){
- return `<span class="eyebrow">PMBC Community</span><h1>Prayer Wall</h1>
- <p class="muted">Share a request, pray for one another, and post updates.</p>
+ return `<span class="eyebrow">PMBC Community</span><h1>Prayer List</h1>
+ <p class="muted">Choose someone to pray for, or tap the check beside their name when you've prayed.</p>
  <div id="prayerNotice" class="notice" hidden></div>
- <section class="card" id="prayerComposer">
-   <h2 id="prayerFormTitle">Share a Prayer Request</h2>
+ <section aria-label="Church prayer list">
+   <h2>Church Prayer List</h2>
+   <div id="prayerList" aria-live="polite"><p class="muted">Loading requests…</p></div>
+ </section>
+ <section id="prayerDetail" aria-live="polite"></section>
+ <details class="card prayer-composer" id="prayerComposer">
+   <summary>+ Submit a Prayer Request</summary>
    <form id="prayerForm" class="stack">
-     <label for="requestText">Your request</label>
-     <textarea class="field prayer-textarea" name="text" id="requestText" maxlength="2000" minlength="3" rows="5" placeholder="How can we pray with you?" required></textarea>
+     <label for="prayerSubject">Name of person to pray for</label>
+     <input class="field" id="prayerSubject" name="subjectName" minlength="2" maxlength="80" required placeholder="Enter a name">
+     <label class="prayer-unspoken-label"><input type="checkbox" id="prayerUnspoken" name="unspoken"> Unspoken request (no name shown)</label>
+     <label for="requestText">Prayer request</label>
+     <textarea class="field prayer-textarea" name="text" id="requestText" maxlength="2000" minlength="3"
+       rows="4" placeholder="How can we pray?" required></textarea>
      <label for="requestVisibility">Who can see this request?</label>
      <select class="field" name="visibility" id="requestVisibility">
        <option value="members">Approved church members</option>
-       <option value="leadership">Church leadership only</option>
+       <option value="leadership">Church administrators only</option>
      </select>
-     <p class="section-note">For now, leadership-only requests can be viewed by you and approved PMBC administrators. Ministry leaders do not automatically receive prayer access.</p>
-     <div id="prayerStatusSection" hidden><label for="requestStatus">Request status</label>
-     <select class="field" name="status" id="requestStatus">
-       <option value="active">Prayer needed</option>
-       <option value="answered">Answered / Update</option>
-     </select></div>
+     <p class="section-note">Leadership-only names and requests are visible only to you and church administrators.</p>
+     <div id="prayerStatusSection" hidden>
+       <label for="requestStatus">Request status</label>
+       <select class="field" name="status" id="requestStatus">
+         <option value="active">Prayer needed (keep on list)</option>
+         <option value="answered">Answered (remove from active list)</option>
+         <option value="removed">Remove from prayer list</option>
+       </select>
+     </div>
      <div class="button-row">
        <button class="button" id="savePrayer" type="submit">Post Prayer Request</button>
        <button class="button outline" id="cancelPrayerEdit" type="button" hidden>Cancel Editing</button>
      </div>
    </form>
- </section>
- <h2>Prayer Requests</h2>
- <p class="section-note">Leadership-only requests are not shown in the general member feed.</p>
- <div id="prayerList" aria-live="polite"><p class="muted">Loading requests…</p></div>`;
+ </details>`;
 }
+function activeRequests(){
+ return [...requestsById.entries()]
+   .filter(([,p])=>p.status==="active")
+   .sort((a,b)=>(b[1].createdAt?.toMillis?.()||0)-(a[1].createdAt?.toMillis?.()||0));
+}
+function prayerName(p){return p.subjectName||p.authorName||"Church Member";}
 function drawList(){
  const list=currentRoot?.querySelector("#prayerList");
- if(!list)return;
+ const details=currentRoot?.querySelector("#prayerDetail");
+ if(!list||!details)return;
  if(errors.length){
    list.innerHTML=`<p role="alert" class="error">${esc(errors.join(" "))}</p>`;
+   details.innerHTML="";
    return;
  }
- if(loaded.size === 0){list.innerHTML='<p class="muted">Loading prayer requests…</p>';return;}
- const visible=[...requestsById.entries()].sort((a,b)=>
-   (b[1].createdAt?.toMillis?.()||0)-(a[1].createdAt?.toMillis?.()||0));
- if(visible.length===0){list.innerHTML='<div class="notice">No prayer requests yet. You can be the first to share one.</div>';return;}
+ if(loaded.size===0){
+   list.innerHTML='<p class="muted">Loading prayer requests…</p>';
+   return;
+ }
+ const visible=activeRequests();
+ if(!visible.some(([id])=>id===selectedPrayerId))selectedPrayerId="";
+ if(visible.length===0){
+   list.innerHTML='<div class="notice">There are no active prayer requests yet.</div>';
+   details.innerHTML="";
+   return;
+ }
  list.innerHTML=visible.map(([id,p])=>{
    const mine=p.authorId===currentUser.uid;
-   const allowedToEdit=mine||isAdmin();
-   const state=prayed.get(id);
-   return `<article class="card prayer-entry">
-    <div class="row"><strong class="itemtitle">${esc(p.authorName||"Church Member")}</strong>
-      <span class="pill ${p.visibility==="leadership"?"warning":""}">${p.visibility==="leadership"?"Leadership Only":"Members"}</span></div>
-    <p class="section-note">${formatDate(p.createdAt)} · ${p.status==="answered"?"Answered / Update":"Prayer Needed"}</p>
-    <p class="prayer-body">${escapeRequestText(p.text)}</p>
-    <div class="button-row">
-      <button class="button ${state?"outline":""}" data-prayed="${esc(id)}" type="button" ${busy?"disabled":""}>${state?"✓ I Prayed":"♡ I Prayed"}</button>
-      ${allowedToEdit?`<button class="button outline" data-edit-prayer="${esc(id)}" type="button">Edit Request</button>`:""}
-    </div>
-   </article>`;
+   const canViewTotal=mine||isAdmin();
+   const hasPrayed=prayed.get(id)===true;
+   const total=prayerTotals.get(id);
+   return `<div class="prayer-list-row ${id===selectedPrayerId?"selected":""}">
+     <button class="prayer-person" type="button" data-select-prayer="${esc(id)}"
+       aria-pressed="${id===selectedPrayerId?"true":"false"}">
+       <span class="prayer-person-name">${esc(prayerName(p))}</span>
+       ${p.visibility==="leadership"?'<span class="pill warning">Private</span>':""}
+       ${canViewTotal&&total!==undefined?`<span class="prayer-count">${total} prayers</span>`:""}
+       <span class="prayer-person-arrow" aria-hidden="true">›</span>
+     </button>
+     <button class="prayer-check ${hasPrayed?"prayed":""}" type="button" data-prayed="${esc(id)}"
+       aria-label="I prayed for ${esc(prayerName(p))}" title="Mark that you prayed"
+       ${busy?"disabled":""}>${hasPrayed?"✓":"○"}</button>
+   </div>`;
  }).join("");
+ if(!selectedPrayerId){
+   details.innerHTML='<p class="prayer-detail-hint">Tap a name above to read the prayer request.</p>';
+   return;
+ }
+ const p=requestsById.get(selectedPrayerId);
+ if(!p){details.innerHTML="";return;}
+ const canEdit=p.authorId===currentUser.uid||isAdmin();
+ const total=prayerTotals.get(selectedPrayerId);
+ details.innerHTML=`<article class="card prayer-selected-detail">
+   <div class="row"><h2>${esc(prayerName(p))}</h2>
+     <span class="pill ${p.visibility==="leadership"?"warning":""}">${p.visibility==="leadership"?"Private":"Church Members"}</span></div>
+   <p class="section-note">Shared ${formatDate(p.createdAt)}${canEdit?" by "+esc(p.authorName):""}</p>
+   <p class="prayer-body">${escapeRequestText(p.text)}</p>
+   ${canEdit?`<p class="prayer-total">${total===undefined?"Loading prayer count…":total+" prayers recorded"}</p>
+     <button class="button outline" type="button" data-edit-prayer="${esc(selectedPrayerId)}">Edit / Answer / Remove Request</button>`:""}
+ </article>`;
 }
 function syncPrayed(){
  const active=new Set(requestsById.keys());
