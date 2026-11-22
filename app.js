@@ -2,6 +2,7 @@
 import { auth, db } from "./firebase.js";
 import { mountPrayer, unmountPrayer } from "./prayer.js";
 import { mountServe, unmountServe } from "./serve.js";
+import { mountHomeUpdates, unmountHomeUpdates } from "./home-updates.js";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification
@@ -42,11 +43,39 @@ function home() {
    <h1>Welcome</h1>
    <p>Worship. Pray. Connect. Serve.</p>
  </section>
+ <div id="updates-notice" class="notice" hidden></div>
  <section class="home-updates" aria-label="Church updates">
-   <h2>Announcements</h2>
-   <div class="card empty-update"><p>No announcements have been posted yet.</p></div>
-   <h2>Upcoming Events</h2>
-   <div class="card empty-update"><p>No events have been scheduled yet.</p></div>
+   <div class="home-heading"><h2>Announcements</h2>
+     ${isAdmin()?`<details class="home-create" data-panel="create-announcement">
+      <summary>+ Add</summary>
+      <form class="stack update-editor" data-update-form="announcement">
+       <label>Title<input class="field" name="title" minlength="2" maxlength="100" required></label>
+       <label>Message<textarea class="field" name="description" maxlength="1200" rows="3" required></textarea></label>
+       <label>Show through date<input class="field" name="date" type="date" required></label>
+       <p class="section-note">Announcement disappears after this date (Central Time).</p>
+       <button class="button" type="submit">Publish announcement</button>
+      </form>
+     </details>`:""}
+   </div>
+   <div id="home-announcements"><p class="muted">Loading announcements…</p></div>
+   <div id="home-announcement-history"></div>
+   <div class="home-heading"><h2>Upcoming Events</h2>
+     ${isAdmin()?`<details class="home-create" data-panel="create-event">
+      <summary>+ Add</summary>
+      <form class="stack update-editor" data-update-form="event">
+       <label>Event title<input class="field" name="title" minlength="2" maxlength="100" required></label>
+       <label>Details (optional)<textarea class="field" name="description" maxlength="1200" rows="3"></textarea></label>
+       <label>Date<input class="field" name="date" type="date" required></label>
+       <label>Start time (Central)<select class="field" name="time"></select></label>
+       <label>Duration<select class="field" name="duration"></select></label>
+       <label>Location (optional)<input class="field" name="location" maxlength="160"></label>
+       <p class="section-note">Times are in 30-minute steps. Event disappears when it ends.</p>
+       <button class="button" type="submit">Publish event</button>
+      </form>
+     </details>`:""}
+   </div>
+   <div id="home-events"><p class="muted">Loading events…</p></div>
+   <div id="home-event-history"></div>
  </section>`;
 }
 function prayer() {
@@ -101,7 +130,9 @@ function navigate(next) {
 function render(){
  unmountPrayer();
  unmountServe();
+ unmountHomeUpdates();
  screen.innerHTML=views[section]();
+ if(section==="home") mountHomeUpdates(screen,user,profile);
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
  if(section==="serve") mountServe(screen.querySelector("#serve-root"),user,profile);
  navTabs.forEach(b=>b.classList.toggle("active",b.dataset.tab===section));
