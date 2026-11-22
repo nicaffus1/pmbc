@@ -11,6 +11,7 @@ const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 let root=null,uid="",admin=false,approved=false,seq=0,stops=[];
 let notices=new Map(),reads=new Map(),streams=new Map(),message="",error=false,waiting=false;
 let deviceToken="";
+let inboxFilter="all";
 const senderConfigured=()=>/^https:\/\/[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev\/?$/i.test(PUSH_SENDER_URL.trim());
 async function sendPhonePush(id){
  if(!admin||!auth.currentUser)throw Error("An approved administrator must be signed in.");
@@ -54,7 +55,11 @@ function render(){
  const list=root.querySelector("#notification-items");
  if(!list)return;
  const items=visibleRecords();
- list.innerHTML=items.length?items.map(([id,n])=>{const read=reads.has(id);
+ const unread=items.filter(([id])=>!reads.has(id)).length;
+ const count=root.querySelector("#notificationCount");if(count)count.textContent=unread?unread+" unread":"All caught up";
+ root.querySelectorAll("[data-notification-filter]").forEach(b=>{let active=b.dataset.notificationFilter===inboxFilter;b.classList.toggle("selected",active);b.setAttribute("aria-pressed",String(active));});
+ const showing=inboxFilter==="unread"?items.filter(([id])=>!reads.has(id)):items;
+ list.innerHTML=showing.length?showing.map(([id,n])=>{const read=reads.has(id);
   return '<article class="card notification-entry '+(read?"read":"unread")+'">'+
    '<div class="notification-label">'+esc(labels[n.kind]||"General")+
    (n.audience==="admins"?' · Admin only':n.audience==="person"?' · Personal reminder':"")+(read?"":" · New")+'</div>'+
@@ -63,13 +68,13 @@ function render(){
     '<button type="button" class="button outline" data-mark-read="'+esc(id)+'">Mark as read</button>':
     '<span class="section-note">Read</span>')+
    (n.linkTab?'<button type="button" class="button outline" data-notification-tab="'+esc(n.linkTab)+'">Open '+esc(n.linkTab)+'</button>':"")+
-   (admin&&n.createdBy===uid?'<button type="button" class="button outline" data-notification-send="'+esc(id)+'">'+
-    (senderConfigured()?'Send phone alert':'Phone sender not connected')+'</button>':"")+
-   (admin?'<button type="button" class="button outline notification-remove" data-notification-remove="'+esc(id)+'">Remove</button>':"")+
+   (admin?'<details class="notification-manage"><summary>Manage</summary>'+
+    (n.createdBy===uid?'<button type="button" class="button outline" data-notification-send="'+esc(id)+'">Retry phone alert</button>':"")+
+    '<button type="button" class="button outline notification-remove" data-notification-remove="'+esc(id)+'">Remove</button></details>':"")+
    '</div></article>';
- }).join(""):'<div class="card empty-update"><p>No notifications yet.</p></div>';
+ }).join(""):'<div class="card empty-update"><p>'+(inboxFilter==="unread"?"No unread notifications.":"No notifications yet.")+'</p></div>';
  const badge=document.querySelector("#notificationBell .notification-dot");
- if(badge)badge.hidden=!items.some(([id])=>!reads.has(id));
+ if(badge)badge.hidden=unread===0;
  const box=root.querySelector("#notificationMessage");
  if(box){box.textContent=message;box.className=error?"error":"notice";box.hidden=!message;}
 }
@@ -151,6 +156,7 @@ function checkPushSupport(){
  }).catch(()=>{});
 }
 function click(event){
+ const filter=event.target.closest("[data-notification-filter]");if(filter){inboxFilter=filter.dataset.notificationFilter;render();return;}
  const phone=event.target.closest("[data-notification-send]");
  if(phone){sendExisting(phone.dataset.notificationSend);return;}
  if(event.target.closest("#enablePush")){registerDevice();return;}
@@ -172,7 +178,7 @@ export function unmountNotifications(){
  seq++;
  for(const stop of stops){try{stop();}catch{}}
  stops=[];root=null;uid="";approved=false;admin=false;notices=new Map();reads=new Map();
- streams=new Map();message="";error=false;waiting=false;deviceToken="";
+ streams=new Map();message="";error=false;waiting=false;deviceToken="";inboxFilter="all";
 }
 export function mountNotifications(container,user,profile){
  unmountNotifications();root=container;uid=user?.uid||"";
