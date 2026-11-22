@@ -1,36 +1,47 @@
 # PMBC — Church Community App
 
-Mobile-first PWA for PMBC, hosted by GitHub Pages with Firebase project `pmbc-d6d17`.
+Mobile-first Progressive Web App, hosted on GitHub Pages at https://nicaffus1.github.io/pmbc/ and backed by Firebase project `pmbc-d6d17`.
 
-## Current implementation
-- Home, Prayer, Serve, More sections with **no fabricated church data**
-- Real Firebase client initialization
-- Email/password sign-in and password reset forms
-- New member registration implementation (temporarily disabled using `REGISTRATION_ENABLED = false` in `app.js` until security setup is completed)
-- Member profile document with pending approval status
-- Administrator screen to approve or decline pending account requests
-- Firestore rules stored in `firestore.rules`, **not yet published to Firebase**
-- Prayer, serving, ministry management, push notifications and public content administration are not implemented yet
+## Implemented
+- Member registration, email/password sign-in and password reset
+- Administrator-approved membership; administrator account-review controls
+- Real Firestore Prayer Wall (not sample data):
+  - Approved members submit prayers and select `members` or `leadership` visibility.
+  - Approved members see member-visible requests; each author can see their own leadership-only requests.
+  - **Only approved PMBC administrators**, plus the author, can see leadership-only requests in this version. Assigned ministry leaders are *not* automatically prayer leadership.
+  - Authors may update their prayers and mark answered. Administrators may moderate edits.
+  - Members can tap “I Prayed” and undo their own acknowledgement; other members cannot read the identities of those who prayed.
+  - Firestore listeners keep requests synchronized between signed-in devices.
+- No invented prayer requests, volunteers or announcements.
 
-## Critical setup before opening registration
+## IMPORTANT: Publish the updated prayer security rules before using Prayer Wall
+The `firestore.rules` file in this repository is a **source copy**. Committing it does not update Firebase permissions.
 
-1. In Firebase Console → Firestore Database, create a **Cloud Firestore** database. Choose **production mode**, not test mode; choose a suitable region (location is difficult to change). Keep access locked until rules are installed.
-2. Open Firestore Database → Rules. Replace the rules with the exact contents of `firestore.rules`, then click **Publish**.
-3. In Firebase Authentication → Sign-in method, enable Email/Password.
-4. In Firebase Authentication → Settings → Authorized domains, add the app's exact GitHub Pages host `nicaffus1.github.io` if it isn't already listed.
-5. After rules have been published, change `const REGISTRATION_ENABLED = false;` to `true` in `app.js` and deploy.
-6. Register the **first** account on the website. This safely creates a pending account.
-7. In Firebase Console → Authentication → Users, copy that account's **User UID**.
-8. In Firestore Database → Data → `users` → document ID matching that UID, set `role` to string `admin` and `status` to string `approved`. Do this ONLY for the trusted initial church administrator in the Firebase Console; ordinary users cannot assign these fields through app code. Reload the PMBC account page.
-9. The administrator can approve other members from PMBC → More → Review Member Requests.
+1. Open Firebase Console → project `pmbc-d6d17` → Firestore Database → **Rules**.
+2. Copy the **entire** current file `firestore.rules` from this repo, replace the rules in Firebase, then select **Publish**.
+3. Test with *non-sensitive dummy content* and two different accounts:
+   - Pending account cannot read or write prayers.
+   - Approved member can post a member-visible request.
+   - Another approved member can see member-visible but not leadership-only requests.
+   - Author can still see their own leadership-only request.
+   - Administrator can read leadership-only requests.
+   - Member cannot edit another person's prayer or read another person's “I Prayed” document.
+4. Do not share sensitive real requests with the congregation until those access checks pass.
 
-**IMPORTANT**: Never copy private member information into GitHub. Avoid adding real prayer requests until feature-specific Firestore rules and application screens are live and tested. Auth registration requires Internet access.
+Firestore security enforces membership and prayer audience; hiding an item in the UI alone is not privacy. Never put confidential member data or administrator credentials in GitHub.
 
-## Static assets
-The original user-supplied blue dove must be stored unchanged as `assets/dove-source.jpg`, plus prepared home-screen icons `assets/icon-180.png`, `assets/icon-192.png`, and `assets/icon-512.png`. Missing images cannot be uploaded through the current GitHub text-file connector.
+## Known limitations / next work
+- Events, announcements, giving link, and ministry volunteer schedules still need to be built.
+- Google Sign-In isn't yet wired into the UI (email/password is supported).
+- Public announcements and events are currently empty-state placeholders.
+- Scheduled reminders require a secure server-side scheduler and notification permission.
+- Author names appear on submitted prayer requests. No anonymous-submission option yet.
+- Deletion is blocked to avoid accidental permanent removal; records can be marked answered.
+- No offline editing or queuing of prayer submissions; active network access is required.
+- The service worker caches static app files, not Firebase member data.
 
-## Web hosting
-Enable GitHub Pages in repository Settings → Pages → Deploy from branch → `main` → `/ (root)`. Public URL is expected to be `https://nicaffus1.github.io/pmbc/` once deployed.
+## PMBC dove branding
+Use the exact supplied artwork at `assets/dove-source.jpg` and the home-screen icons at `assets/icon-180.png`, `assets/icon-192.png`, `assets/icon-512.png`. Do not redraw the logo.
 
-## Next work
-After verified Firestore rules and the first administrator, turn on registration and perform two-user authorization checks. Then build member prayer requests, secure leadership-only privacy, volunteer positions and shifts, ministry-scoped roles, and reminders.
+## First administrator
+The first trusted administrator was established by manually setting their own `users/{uid}` Firestore document to exact string fields `role: "admin"` and `status: "approved"`. Only trusted administrators can approve subsequent membership requests through the app.
