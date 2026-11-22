@@ -1,0 +1,22 @@
+name: PMBC rebuild checks
+on:
+  push:
+    branches: [rebuild-v2]
+  pull_request:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm test
+      - run: node --check app.js
+      - run: node --check serve.js
+      - run: node --check prayer.js
+      - run: node --check ministry-data.js
+      - run: node --check serve-model.js
+      - run: node --check service-worker.js
+      - run: node -e 'JSON.parse(require("fs").readFileSync("firestore.indexes.json","utf8"))'
