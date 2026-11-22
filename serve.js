@@ -53,7 +53,7 @@ function showShiftTime(value){
  +" · "+new Date(2000,0,1,h,min).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}));
 }
 function shiftList(mid,pid){
- const list=[...(shifts.get(positionKey(mid,pid))?.values()||[])].filter(x=>x.active)
+ const list=[...(shifts.get(positionKey(mid,pid))?.values()||[])].filter(x=>x.active && x.endsAt>=chicagoNow())
    .sort((a,b)=>a.startsAt.localeCompare(b.startsAt));
  const rows=list.map(x=>{
   const key=shiftKey(mid,pid,x.id), signed=shiftJoined.get(key)===true;
