@@ -91,6 +91,28 @@ function shiftList(mid,pid){
   </form></details>`:""}
  </div>`;
 }
+function watchShiftRoster(mid,pid,shift,token){
+ const key=shiftKey(mid,pid,shift.id);
+ const allowed=admin()||!shift.rosterVisibility||shift.rosterVisibility==="members";
+ const subscribed=rosterSubscriptions.get(key);
+ if(!allowed){
+   if(subscribed){subscribed();rosterSubscriptions.delete(key);}
+   shiftRosters.delete(key);
+   return;
+ }
+ if(subscribed)return;
+ const unsub=onSnapshot(collection(db,"ministries",mid,"positions",pid,"shifts",shift.id,"signups"),snapshot=>{
+   if(token!==sequence)return;
+   shiftRosters.set(key,snapshot.docs.map(d=>({id:d.id,...d.data()}))
+     .sort((a,b)=>(a.memberName||"").localeCompare(b.memberName||"")));
+   draw();
+ },error=>{
+   if(token!==sequence)return;
+   notice("Couldn't load the volunteer roster ("+(error.code||"error")+").",true);
+ });
+ rosterSubscriptions.set(key,unsub);
+}
+
 function watchShiftSignup(mid,pid,sid,token){
  const key=shiftKey(mid,pid,sid);
  if(knownShiftListeners.has("signup:"+key))return;
@@ -110,7 +132,10 @@ function watchShifts(mid,pid,token){
    if(token!==sequence)return;
    shifts.set(key,new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}])));
    for(const item of shifts.get(key).values()){
-     if(item.active)watchShiftSignup(mid,pid,item.id,token);
+     if(item.active){
+       watchShiftSignup(mid,pid,item.id,token);
+       watchShiftRoster(mid,pid,item,token);
+     }
    }
    draw();
  },error=>{
@@ -325,9 +350,28 @@ function onChange(event){
    draw();
  }
 }
+async function shareRoster(button){
+ if(!admin())return;
+ const {mid,pid,sid}=button.dataset;
+ const item=shifts.get(positionKey(mid,pid))?.get(sid);
+ if(!item||item.rosterVisibility==="members")return;
+ if(!window.confirm("Make the volunteer names for this shift visible to all approved members?"))return;
+ const lock="roster:"+shiftKey(mid,pid,sid);
+ if(pendingWrites.has(lock))return;
+ pendingWrites.add(lock);
+ try{
+   await updateDoc(doc(db,"ministries",mid,"positions",pid,"shifts",sid),{
+     rosterVisibility:"members"
+   });
+   notice("Volunteer names are now visible to approved members.");
+ }catch(error){
+   notice("Couldn't share volunteer names ("+(error.code||"error")+").",true);
+ }finally{pendingWrites.delete(lock);}
+}
+
 function onClick(event){
- const button=event.target.closest("[data-toggle-signup]");
- if(button){toggleSignup(button);return;}
+ const share=event.target.closest("[data-share-roster]");
+ if(share){shareRoster(share);return;}
  const shiftButton=event.target.closest("[data-toggle-shift]");
  if(shiftButton)toggleShift(shiftButton);
 }
@@ -339,8 +383,10 @@ function onSubmit(event){
 export function unmountServe(){
  sequence++;
  for(const unsub of stops){try{unsub();}catch{}}
+ for(const unsub of rosterSubscriptions.values()){try{unsub();}catch{}}
+ rosterSubscriptions=new Map();
  stops=[];ministries=new Map();positions=new Map();joined=new Map();
- shifts=new Map();shiftJoined=new Map();
+ shifts=new Map();shiftJoined=new Map();shiftRosters=new Map();
  knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();
  selectedMinistryId="";expandedPanels=new Set();
  root=null;account=null;profile=null;
