@@ -178,3 +178,30 @@
 .home-updates h2{margin-top:24px;margin-bottom:10px}
 .empty-update{background:#fafcfd;border-style:dashed;box-shadow:none;padding:14px 16px}
 .empty-update p{margin:0;font-size:13px;color:#63788b}
+
+/* Prayer list v28: a name-first, privacy-aware prayer experience. */
+#prayer-root h2{margin:20px 0 10px}
+.prayer-list-row{display:flex;align-items:stretch;border:1px solid #e0eaf0;border-radius:12px;margin:8px 0;background:#fff;overflow:hidden}
+.prayer-list-row.selected{border-color:#3f9ca9;background:#f5fbfc}
+.prayer-person{flex:1;display:flex;align-items:center;gap:7px;min-width:0;border:0;background:transparent;color:#143b5d;font:inherit;text-align:left;padding:13px 10px 13px 14px;cursor:pointer}
+.prayer-person-name{font-size:15px;font-weight:700;overflow-wrap:anywhere;min-width:0}
+.prayer-person .pill{flex-shrink:0}
+.prayer-person-arrow{font-size:23px;color:#8297a7;margin-left:auto;line-height:1}
+.prayer-count{font-size:11px;color:#5c7487;white-space:nowrap;margin-left:auto}
+.prayer-check{flex:0 0 55px;border:0;border-left:1px solid #e1ebf0;background:#f3f9fa;color:#438999;font:inherit;font-size:27px;cursor:pointer}
+.prayer-check.prayed{background:#e1f4ed;color:#166b4b;font-weight:750}
+.prayer-check:disabled{opacity:.55;cursor:not-allowed}
+.prayer-person:focus-visible,.prayer-check:focus-visible{outline:3px solid #009eaa;outline-offset:-3px}
+.prayer-detail-hint{font-size:12px;color:#6c8091;margin:10px 0 18px}
+.prayer-selected-detail{margin:13px 0 22px;background:#f9fcfd}
+.prayer-selected-detail h2{font-size:18px;margin:0}
+.prayer-selected-detail .row{align-items:center}
+.prayer-selected-detail .prayer-body{font-size:14px;line-height:1.6;white-space:pre-wrap}
+.prayer-total{font-size:13px;font-weight:700;color:#1d6e7a}
+.prayer-composer{margin-top:18px}
+.prayer-composer>summary{color:#0b596c;font-weight:700;font-size:14px;padding:3px 0;cursor:pointer}
+.prayer-composer[open]>summary{padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid #e2ecf0}
+.prayer-composer .stack{gap:10px}
+.prayer-unspoken-label{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px}
+.prayer-unspoken-label input{width:19px;height:19px;accent-color:#0b7c88}
+@media(max-width:380px){.prayer-count{font-size:10px}.prayer-person{padding-left:10px}.prayer-check{flex-basis:47px}}
