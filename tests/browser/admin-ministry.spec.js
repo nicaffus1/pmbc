@@ -7,6 +7,7 @@ import {readFileSync} from "node:fs";
 
 test("administrator can create ministries, schedule recurring serving and moderate prayers on a phone",async({page},testInfo)=>{
  const email="admin-ui-"+testInfo.project.name+"@pmbc.test",password="TestOnly12345!";
+ const ministryName="Children's Church "+testInfo.project.name;
  const response=await fetch("http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-key",{
   method:"POST",
   headers:{"Content-Type":"application/json"},
@@ -39,16 +40,16 @@ test("administrator can create ministries, schedule recurring serving and modera
   await page.locator('[data-tab="serve"]').click();
   await expect(page.getByText("Create a Ministry")).toBeVisible();
   await expect(page.locator("#serveBuildVersion")).toContainText("rebuild-v2");
-  await page.locator('#ministryName').fill("Children's Church");
+  await page.locator('#ministryName').fill(ministryName);
   await page.locator('#ministryDescription').fill("Sunday morning volunteers");
   await page.locator("#addMinistryButton").click();
   await expect(page.locator("#serveMessage")).toContainText("Ministry saved",{timeout:15000});
   await expect(page.locator("#ministryPicker")).toHaveValue(/.+/);
-  await expect(page.getByRole("heading",{name:"Children's Church"})).toBeVisible();
+  await expect(page.getByRole("heading",{name:ministryName})).toBeVisible();
   await page.reload();
-  await expect(page.locator("#ministryPicker")).toContainText("Children's Church");
+  await expect(page.locator("#ministryPicker")).toContainText(ministryName);
   // Step 2: select a ministry and create a volunteer position.
-  await page.locator("#ministryPicker").selectOption({label:"Children's Church"});
+  await page.locator("#ministryPicker").selectOption({label:ministryName});
   await page.locator('[data-position-form] [name="title"]').fill("Classroom Helper");
   await page.locator('[data-position-form] button[type="submit"]').click();
   await expect(page.locator("#serveMessage")).toContainText("Volunteer position added");
