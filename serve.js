@@ -32,6 +32,79 @@ function volunteerUI(mid,pid){
  data-toggle-signup data-mid="${esc(mid)}" data-pid="${esc(pid)}"
  ${pendingWrites.has(key)?"disabled":""}>${isJoined?"✓ Volunteering — Leave Position":"I'd Like to Serve"}</button>`;
 }
+
+function chicagoNow(){
+ const fields={};
+ for(const part of new Intl.DateTimeFormat("en-US",{timeZone:"America/Chicago",
+  year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",
+  minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date()))fields[part.type]=part.value;
+ return fields.year+"-"+fields.month+"-"+fields.day+"T"+fields.hour+":"+fields.minute;
+}
+function showShiftTime(value){
+ const date=value?.slice(0,10), time=value?.slice(11);
+ if(!date||!time)return esc(value);
+ const [y,m,d]=date.split("-").map(Number);
+ const [h,min]=time.split(":").map(Number);
+ return esc(new Date(y,m-1,d).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})
+ +" · "+new Date(2000,0,1,h,min).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}));
+}
+function shiftList(mid,pid){
+ const list=[...(shifts.get(positionKey(mid,pid))?.values()||[])].filter(x=>x.active)
+   .sort((a,b)=>a.startsAt.localeCompare(b.startsAt));
+ const rows=list.map(x=>{
+  const key=shiftKey(mid,pid,x.id), signed=shiftJoined.get(key)===true;
+  const past=x.endsAt<chicagoNow();
+  return `<div class="shift-entry">
+    <strong>${showShiftTime(x.startsAt)} to ${showShiftTime(x.endsAt).split(" · ").pop()} CT</strong>
+    ${x.notes?`<p>${esc(x.notes)}</p>`:""}
+    <button class="button ${signed?"outline":""}" type="button" data-toggle-shift
+      data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}"
+      ${pendingWrites.has("shift:"+key)||(!signed&&past)?"disabled":""}>
+      ${signed?"✓ Signed Up — Cancel Shift":past?"Shift Ended":"Sign Up for Shift"}
+    </button>
+  </div>`;
+ }).join("");
+ return `<div class="shift-list"><h4>Scheduled Shifts</h4>
+  ${rows||'<p class="muted">No scheduled shifts yet.</p>'}
+  ${admin()?`<form class="stack shift-form" data-shift-form data-mid="${esc(mid)}" data-pid="${esc(pid)}">
+    <label>Shift date<input class="field" name="date" type="date" required></label>
+    <div class="shift-time-row">
+      <label>Start time<input class="field" name="start" type="time" required></label>
+      <label>End time<input class="field" name="end" type="time" required></label>
+    </div>
+    <label>Notes (optional)<input class="field" name="notes" maxlength="300"></label>
+    <p class="section-note">Times are Central Time. Each shift starts and ends on the same day.</p>
+    <button class="button outline" type="submit">Add Shift</button>
+  </form>`:""}
+ </div>`;
+}
+function watchShiftSignup(mid,pid,sid,token){
+ const key=shiftKey(mid,pid,sid);
+ if(knownShiftListeners.has("signup:"+key))return;
+ knownShiftListeners.add("signup:"+key);
+ stops.push(onSnapshot(doc(db,"ministries",mid,"positions",pid,"shifts",sid,"signups",account.uid),snap=>{
+   if(token!==sequence)return;
+   shiftJoined.set(key,snap.exists());draw();
+ },error=>{
+   if(token===sequence)notice("Unable to check shift signup ("+(error.code||"error")+").",true);
+ }));
+}
+function watchShifts(mid,pid,token){
+ const key=positionKey(mid,pid);
+ if(knownShiftListeners.has("shifts:"+key))return;
+ knownShiftListeners.add("shifts:"+key);
+ stops.push(onSnapshot(collection(db,"ministries",mid,"positions",pid,"shifts"),snap=>{
+   if(token!==sequence)return;
+   shifts.set(key,new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}])));
+   for(const item of shifts.get(key).values()){
+     if(item.active)watchShiftSignup(mid,pid,item.id,token);
+   }
+   draw();
+ },error=>{
+   if(token===sequence)notice("Unable to load shifts ("+(error.code||"error")+"). Check the published Firebase rules.",true);
+ }));
+}
+
 function positionUI(mid,entry){
  const {id,...data}=entry;
  return `<div class="position-item">
