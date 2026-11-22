@@ -59,20 +59,6 @@ function home() {
  ${givingCard(true)}
  <div id="updates-notice" class="notice" hidden></div>
  <section class="home-updates" aria-label="Church updates">
-   <div class="home-heading"><h2>Announcements</h2>
-     ${isAdmin()?`<details class="home-create" data-panel="create-announcement">
-      <summary>+ Add</summary>
-      <form class="stack update-editor" data-update-form="announcement">
-       <label>Title<input class="field" name="title" minlength="2" maxlength="100" required></label>
-       <label>Message<textarea class="field" name="description" maxlength="1200" rows="3" required></textarea></label>
-       <label>Show through date<input class="field" name="date" type="date" required></label>
-       <p class="section-note">Announcement disappears after this date (Central Time).</p>
-       <button class="button" type="submit">Publish announcement</button>
-      </form>
-     </details>`:""}
-   </div>
-   <div id="home-announcements"><p class="muted">Loading announcements…</p></div>
-   <div id="home-announcement-history"></div>
    <div class="home-heading"><h2>Upcoming Events</h2>
      ${isAdmin()?`<details class="home-create" data-panel="create-event">
       <summary>+ Add</summary>
