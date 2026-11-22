@@ -118,8 +118,8 @@ async function addPosition(event){
  event.preventDefault();
  const mid=form.dataset.mid;
  if(!ministries.get(mid)?.active)return;
- const title=String(form.elements.title.value).trim();
- const description=String(form.elements.description.value).trim();
+ const title=String(form.elements.namedItem("title").value).trim();
+ const description=String(form.elements.namedItem("description").value).trim();
  if(title.length<2||title.length>80||description.length>500){
    notice("Check the position title and description lengths.",true);return;
  }
