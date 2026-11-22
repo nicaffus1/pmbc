@@ -3,6 +3,7 @@ import { auth, db } from "./firebase.js";
 import { mountPrayer, unmountPrayer } from "./prayer.js";
 import { mountServe, unmountServe } from "./serve.js";
 import { mountHomeUpdates, unmountHomeUpdates } from "./home-updates.js";
+import { mountNotifications, unmountNotifications } from "./notifications.js";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification
@@ -84,6 +85,9 @@ function prayer() {
 function serve() {
  return '<div id="serve-root"></div>';
 }
+function notifications(){
+ return '<div id="notifications-root"></div>';
+}
 function form() {
  let state = `<span class="eyebrow">Member access</span><h1>${authMode==="register"?"Request Membership":authMode==="reset"?"Reset Password":"Member Sign In"}</h1>
  <p class="muted">${authMode==="register"?"New accounts must be approved before private access is granted.":"PMBC uses your email and password."}</p>`;
@@ -123,7 +127,7 @@ function adminView() {
  <button class="button outline" id="backToAccount">Back to Account</button>
  ${list || '<p class="muted">No pending membership requests.</p>'}`;
 }
-const views = {home, prayer, serve, more};
+const views = {home, prayer, serve, more, notifications};
 function navigate(next) {
  section = views[next]?next:"home";render();
 }
@@ -131,11 +135,15 @@ function render(){
  unmountPrayer();
  unmountServe();
  unmountHomeUpdates();
+ unmountNotifications();
  screen.innerHTML=views[section]();
  if(section==="home") mountHomeUpdates(screen,user,profile);
+ if(section==="notifications") mountNotifications(screen.querySelector("#notifications-root"),user,profile);
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
  if(section==="serve") mountServe(screen.querySelector("#serve-root"),user,profile);
  navTabs.forEach(b=>b.classList.toggle("active",b.dataset.tab===section));
+ const bell=document.getElementById("notificationBell");
+ if(bell)bell.classList.toggle("active",section==="notifications");
  document.title="PMBC — "+section[0].toUpperCase()+section.slice(1);
  screen.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{location.hash=b.dataset.go;}));
  screen.querySelectorAll("[data-authmode]").forEach(b=>b.addEventListener("click",()=>{authMode=b.dataset.authmode;accountError="";render()}));
@@ -205,6 +213,7 @@ async function decide(uid,status) {
 }
 window.addEventListener("hashchange",()=>navigate(location.hash.slice(1)));
 navTabs.forEach(b=>b.addEventListener("click",()=>{location.hash=b.dataset.tab;}));
+document.querySelector("#notificationBell")?.addEventListener("click",()=>{location.hash="notifications";});
 navigate(location.hash.slice(1));
 onAuthStateChanged(auth,async u=>{accountError="";review=null;await refreshProfile(u);});
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(console.warn));
