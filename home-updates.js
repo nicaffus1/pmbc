@@ -221,7 +221,7 @@ export function mountHomeUpdates(container,user,profile){
    eventForm.elements.namedItem("duration").innerHTML=minutesOptions();
  }
  const token=generation;
- for(const [kind,path] of [["announcement","announcements"],["event","events"]]){
+ for(const [kind,path] of [["event","events"]]){
   const reference=admin?collection(db,path):query(collection(db,path),where("active","==",true));
   const unsub=onSnapshot(reference,snap=>{
    if(token!==generation)return;
