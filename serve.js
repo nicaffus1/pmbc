@@ -1,5 +1,7 @@
 // PMBC Serve — ministry positions and member opt-in, backed by Firestore.
 import { db } from "./firebase.js";
+import { createMinistry, observeMinistries } from "./ministry-data.js";
+import { buildId, upcomingWeeklyDates, churchClock, shiftIsUpcoming } from "./serve-model.js";
 import {
   collection, doc, addDoc, setDoc, deleteDoc, updateDoc, getDoc,
   onSnapshot, serverTimestamp, writeBatch
@@ -13,6 +15,7 @@ let root=null, account=null, profile=null, sequence=0;
 let stops=[], ministries=new Map(), positions=new Map(), joined=new Map();
 let shifts=new Map(), shiftJoined=new Map(), shiftRosters=new Map();
 let knownPositionListeners=new Set(), knownShiftListeners=new Set(), pendingWrites=new Set();
+let watchedMinistries=new Set();
 let rosterListeners=new Map();
 let selectedMinistry="", recurring=new Map(), recurringJoined=new Map(), recurringRosters=new Map();
 let recurringListeners=new Set(), recurringRostersListeners=new Map();
@@ -37,13 +40,7 @@ function volunteerUI(mid,pid){
  ${pendingWrites.has(key)?"disabled":""}>${isJoined?"✓ Volunteering — Leave Position":"I'd Like to Serve"}</button>`;
 }
 
-function chicagoNow(){
- const fields={};
- for(const part of new Intl.DateTimeFormat("en-US",{timeZone:"America/Chicago",
-  year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",
-  minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date()))fields[part.type]=part.value;
- return fields.year+"-"+fields.month+"-"+fields.day+"T"+fields.hour+":"+fields.minute;
-}
+function chicagoNow(){return churchClock();}
 function showShiftTime(value){
  const date=value?.slice(0,10), time=value?.slice(11);
  if(!date||!time)return esc(value);
@@ -53,7 +50,7 @@ function showShiftTime(value){
  +" · "+new Date(2000,0,1,h,min).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}));
 }
 function shiftList(mid,pid){
- const list=[...(shifts.get(positionKey(mid,pid))?.values()||[])].filter(x=>x.active && x.endsAt>=chicagoNow())
+ const list=[...(shifts.get(positionKey(mid,pid))?.values()||[])].filter(x=>x.active && shiftIsUpcoming(x.endsAt))
    .sort((a,b)=>a.startsAt.localeCompare(b.startsAt));
  const rows=list.map(x=>{
   const key=shiftKey(mid,pid,x.id), signed=shiftJoined.get(key)===true;
@@ -95,7 +92,7 @@ function shiftList(mid,pid){
       <option value="admins">Administrators only</option>
      </select></label>
     <p class="section-note">Times are Central Time. Each shift starts and ends on the same day.</p>
-    <button class="button outline" type="submit">Add Shift</button>
+    <button class="button outline" type="button" data-add-shift>Add Shift</button>
   </form>`:""}
  </div>`;
 }
@@ -191,19 +188,7 @@ function watchShifts(mid,pid,token){
 
 
 const weekdayNames=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-function datesForSchedule(schedule,count=5){
- const today=chicagoNow().slice(0,10);
- const [y,m,d]=today.split("-").map(Number);
- const utc=new Date(Date.UTC(y,m-1,d));
- let delta=(schedule.weekday-utc.getUTCDay()+7)%7;
- if(delta===0&&schedule.endTime<=chicagoNow().slice(11))delta=7;
- const dates=[];
- for(let i=0;i<count;i++){
-  const next=new Date(utc.getTime()+(delta+i*7)*86400000);
-  dates.push(next.toISOString().slice(0,10));
- }
- return dates;
-}
+function datesForSchedule(schedule,count=5){return upcomingWeeklyDates(schedule.weekday,schedule.endTime,count);}
 function recurringUI(mid,pid){
  const schedules=[...(recurring.get(positionKey(mid,pid))?.values()||[])].filter(s=>s.active)
   .sort((a,b)=>a.title.localeCompare(b.title));
@@ -263,7 +248,7 @@ function recurringUI(mid,pid){
     <option value="members">Approved members</option>
     <option value="admins">Administrators only</option>
    </select></label>
-  <button class="button outline" type="submit">Create Weekly Schedule</button>
+  <button class="button outline" type="button" data-add-recurring>Create Weekly Schedule</button>
  </form>`:""}
  </section>`;
 }
@@ -308,7 +293,7 @@ function ministryUI(entry){
    <label>Description (optional)
     <textarea class="field" name="description" maxlength="500" rows="2"
      placeholder="What will a volunteer do?"></textarea></label>
-   <button class="button outline" type="submit">Add Position</button>
+   <button class="button outline" type="button" data-add-position>Add Position</button>
   </form>`:""}
  </article>`;
 }
@@ -348,6 +333,8 @@ function watchSignup(mid,pid,token){
  stops.push(unsub);
 }
 function watchPositions(mid,token){
+ if(watchedMinistries.has(mid))return;
+ watchedMinistries.add(mid);
  const unsub=onSnapshot(collection(db,"ministries",mid,"positions"),snap=>{
    if(sequence!==token)return;
    const records=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
@@ -376,10 +363,9 @@ async function addMinistry(event){
  if(button){button.disabled=true;button.textContent="Saving Ministry…";}
  notice("Saving ministry to Firebase…");
  try{
-  const created=await addDoc(collection(db,"ministries"),{
-   name,description,active:true,createdBy:account.uid,createdAt:serverTimestamp()
-  });
-  selectedMinistry=created.id;
+  const createdId=await createMinistry({name,description,uid:account.uid});
+  selectedMinistry=createdId;
+  watchPositions(createdId,sequence);
   form.reset();
   notice("Ministry saved. It should appear selected below.");
  }catch(error){
@@ -392,10 +378,8 @@ async function addMinistry(event){
   if(button?.isConnected){button.disabled=false;button.textContent="Add Ministry";}
  }
 }
-async function addPosition(event){
- const form=event.target.closest("[data-position-form]");
+async function addPosition(form){
  if(!form||!admin())return;
- event.preventDefault();
  const mid=form.dataset.mid;
  if(!ministries.get(mid)?.active)return;
  const title=String(form.elements.namedItem("title").value).trim();
@@ -403,7 +387,8 @@ async function addPosition(event){
  if(title.length<2||title.length>80||description.length>500){
    notice("Check the position title and description lengths.",true);return;
  }
- const button=form.querySelector("button[type=submit]");button.disabled=true;
+ const button=form.querySelector("[data-add-position]");button.disabled=true;
+ notice("Saving volunteer position…");
  try{
    await addDoc(collection(db,"ministries",mid,"positions"),{
      title,description,active:true,createdBy:account.uid,createdAt:serverTimestamp()
@@ -431,9 +416,7 @@ async function toggleSignup(button){
  finally{pendingWrites.delete(key);draw();}
 }
 
-async function addShift(event){
- event.preventDefault();
- const form=event.target.closest("[data-shift-form]");
+async function addShift(form){
  if(!form||!admin())return;
  const mid=form.dataset.mid,pid=form.dataset.pid;
  if(!ministries.get(mid)?.active||!positions.get(mid)?.get(pid)?.active)return;
@@ -447,7 +430,8 @@ async function addShift(event){
    ||endsAt<=startsAt||notes.length>300){
    notice("Enter a valid date and a later end time on the same day.",true);return;
  }
- const button=form.querySelector("[type=submit]");button.disabled=true;
+ const button=form.querySelector("[data-add-shift]");button.disabled=true;
+ notice("Saving scheduled shift…");
  try{
    await addDoc(collection(db,"ministries",mid,"positions",pid,"shifts"),{
      startsAt,endsAt,timeZone:"America/Chicago",notes,active:true,
@@ -486,10 +470,8 @@ async function toggleShift(button){
 
 
 
-async function addRecurring(event){
- event.preventDefault();
- if(!admin())return;
- const form=event.target;
+async function addRecurring(form){
+ if(!admin()||!form)return;
  const mid=form.dataset.mid,pid=form.dataset.pid;
  const title=form.elements.namedItem("title").value.trim();
  const weekday=Number(form.elements.namedItem("weekday").value);
@@ -499,7 +481,8 @@ async function addRecurring(event){
  const rosterVisibility=form.elements.namedItem("rosterVisibility").value;
  if(!positions.get(mid)?.get(pid)?.active||title.length<2||title.length>80
     ||weekday<0||weekday>6||!startTime||!endTime||endTime<=startTime||notes.length>300)return notice("Check the weekly schedule details and times.",true);
- const btn=form.querySelector("[type=submit]");btn.disabled=true;
+ const btn=form.querySelector("[data-add-recurring]");btn.disabled=true;
+ notice("Saving weekly schedule…");
  try{
   await addDoc(collection(db,"ministries",mid,"positions",pid,"recurring"),{
    title,weekday,startTime,endTime,notes,rosterVisibility,active:true,
@@ -585,7 +568,9 @@ function archivePosition(button){setPositionActive(button.dataset.mid,button.dat
 function restorePosition(button){setPositionActive(button.dataset.mid,button.dataset.pid,true);}
 async function onChange(event){
  const ministryPicker=event.target.closest("#ministryPicker");
- if(ministryPicker){selectedMinistry=ministryPicker.value;draw();return;}
+ if(ministryPicker){selectedMinistry=ministryPicker.value;
+  if(selectedMinistry)watchPositions(selectedMinistry,sequence);
+  draw();return;}
  const select=event.target.closest("[data-roster-visibility]");
  if(!select||!admin())return;
  const {mid,pid,sid}=select.dataset;
@@ -603,6 +588,12 @@ async function onChange(event){
 }
 
 function onClick(event){
+ const positionCreate=event.target.closest("[data-add-position]");
+ if(positionCreate){addPosition(positionCreate.closest("[data-position-form]"));return;}
+ const shiftCreate=event.target.closest("[data-add-shift]");
+ if(shiftCreate){addShift(shiftCreate.closest("[data-shift-form]"));return;}
+ const recurrenceCreate=event.target.closest("[data-add-recurring]");
+ if(recurrenceCreate){addRecurring(recurrenceCreate.closest("[data-recurring-form]"));return;}
  const button=event.target.closest("[data-toggle-signup]");
  if(button){toggleSignup(button);return;}
  const shiftButton=event.target.closest("[data-toggle-shift]");
@@ -619,9 +610,10 @@ function onClick(event){
  if(archive)archiveRecurring(archive);
 }
 function onSubmit(event){
- if(event.target.matches("[data-position-form]")){addPosition(event);return;}
- if(event.target.matches("[data-shift-form]")){addShift(event);return;}
- if(event.target.matches("[data-recurring-form]"))addRecurring(event);
+ const form=event.target;
+ if(form.matches("[data-position-form]")){event.preventDefault();addPosition(form);return;}
+ if(form.matches("[data-shift-form]")){event.preventDefault();addShift(form);return;}
+ if(form.matches("[data-recurring-form]")){event.preventDefault();addRecurring(form);}
 }
 export function unmountServe(){
  sequence++;
@@ -630,7 +622,7 @@ export function unmountServe(){
  rosterListeners=new Map();
  stops=[];ministries=new Map();positions=new Map();joined=new Map();
  shifts=new Map();shiftJoined=new Map();shiftRosters=new Map();
- knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();
+ knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();watchedMinistries=new Set();
  selectedMinistry="";recurring=new Map();recurringJoined=new Map();recurringRosters=new Map();
  recurringListeners=new Set();
  for(const stop of recurringRostersListeners.values()){try{stop();}catch{}}
@@ -648,7 +640,7 @@ export function mountServe(container,user,userProfile){
  root.innerHTML=`<span class="eyebrow">Get involved</span><h1>Serve</h1>
  <p class="muted">Find a ministry and sign up for a scheduled shift.</p>
  <div id="serveMessage" hidden></div>
- <p class="section-note" id="serveBuildVersion">Serve build: 2026-11-21.12</p>
+ <p class="section-note" id="serveBuildVersion">Serve build: ${buildId}</p>
  ${admin()?`<section class="card" id="ministryComposer">
   <h2>Create a Ministry</h2>
   <form id="ministryForm" class="stack" novalidate>
@@ -671,12 +663,11 @@ export function mountServe(container,user,userProfile){
  root.addEventListener("click",onClick);
  root.addEventListener("change",onChange);
  const token=sequence;
- stops.push(onSnapshot(collection(db,"ministries"),snap=>{
+ stops.push(observeMinistries(entries=>{
    if(token!==sequence)return;
-   for(const d of snap.docs){
-     if(d.data().active && !ministries.has(d.id))watchPositions(d.id,token);
-   }
-   ministries=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
+   ministries=new Map(entries.map(d=>[d.id,d]));
+   if(selectedMinistry && ministries.get(selectedMinistry)?.active)
+     watchPositions(selectedMinistry,token);
    draw();
  },err=>{
    if(token!==sequence)return;

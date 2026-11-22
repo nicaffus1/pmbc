@@ -1,0 +1,30 @@
+name: PMBC rebuild checks
+on:
+  push:
+    branches: [rebuild-v2]
+  pull_request:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm install
+      - run: npm test
+      - run: npm run test:rules
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:browser
+      - run: node --check app.js
+      - run: node --check serve.js
+      - run: node --check prayer.js
+      - run: node --check ministry-data.js
+      - run: node --check serve-model.js
+      - run: node --check service-worker.js
+      - run: node -e 'JSON.parse(require("fs").readFileSync("firestore.indexes.json","utf8"))'
