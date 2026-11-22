@@ -109,3 +109,12 @@
 .position-dropdown-content>.shift-list{margin-top:9px}
 .position-dropdown-summary:focus-visible{outline:3px solid #00acb7;outline-offset:-3px}
 @media(max-width:380px){.position-dropdown-summary{flex-wrap:wrap}.position-dropdown-count{margin-left:auto}}
+
+/* Two-step Serve selection: ministry → position → available shifts */
+.position-picker-label{display:block;font-size:13px;font-weight:700;color:#224b6a;margin:4px 0 2px}
+.position-picker{background:#fff;font-size:16px;margin:0 0 14px}
+.position-picker:disabled{color:#708194}
+.position-detail{border-top:1px solid #e5edf2;padding-top:9px}
+.position-detail>.position-description{font-size:13px;color:#435c72;margin:2px 0 13px;line-height:1.55}
+.position-detail>.shift-list{border-top:0;margin-top:0;padding-top:5px}
+.position-empty{font-size:13px;margin:5px 0 13px}
