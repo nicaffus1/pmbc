@@ -170,3 +170,11 @@
 .church-contact>div{display:grid;gap:4px;padding-top:10px;border-top:1px solid #e8eef2;min-width:0}
 .church-contact strong{font-size:12px;color:#597083}
 .church-contact a{font-size:14px;color:#0b627b;text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+
+/* Simplified Home: no duplicate navigation cards or church contact block. */
+.top{justify-content:flex-start}
+.home-welcome .eyebrow{font-size:11px;line-height:1.5}
+.home-welcome h1{margin-top:8px}
+.home-updates h2{margin-top:24px;margin-bottom:10px}
+.empty-update{background:#fafcfd;border-style:dashed;box-shadow:none;padding:14px 16px}
+.empty-update p{margin:0;font-size:13px;color:#63788b}
