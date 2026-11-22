@@ -448,6 +448,31 @@ service cloud.firestore {
       }
     }
 
+    // Public sermon index. Admin-only edits to trusted sermon metadata.
+    match /sermons/{sermonId} {
+      function validSermon(data) {
+        return sermonId.matches('^[A-Za-z0-9_-]{11}
+    match /{document=**} { allow read, write: if false; }
+  }
+}
+)
+          && data.keys().hasOnly(['id','title','speaker','scripture','series','topics','description','published','updatedAt'])
+          && data.keys().hasAll(['id','title','speaker','scripture','series','topics','description','published','updatedAt'])
+          && data.id == sermonId
+          && data.title is string && data.title.size() >= 1 && data.title.size() <= 180
+          && data.speaker is string && data.speaker.size() <= 100
+          && data.scripture is string && data.scripture.size() <= 120
+          && data.series is string && data.series.size() <= 100
+          && data.description is string && data.description.size() <= 1200
+          && data.published is string && data.published.size() <= 50
+          && data.topics is list && data.topics.size() <= 12
+          && data.updatedAt == request.time;
+      }
+      allow get, list: if true;
+      allow create, update: if isAdmin() && validSermon(request.resource.data);
+      allow delete: if false;
+    }
+
     // No access to other collections until they have dedicated rules.
     match /{document=**} { allow read, write: if false; }
   }
