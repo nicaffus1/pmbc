@@ -58,3 +58,15 @@ The first trusted administrator was established by manually setting their own `u
 - Firestore rules restrict roster **list** reads to authorized viewers; a user's own signup remains readable to themselves. Roster privacy is not just UI hiding.
 - Administrators can **Remove Position** (sets `active: false`) and later **Restore** it from the collapsed Removed Positions list. It is not a permanent delete: historical shifts and signups are retained, and new signups for archived positions are blocked.
 - **Deployment:** publish the entire updated `firestore.rules` to Firebase Console → Firestore Rules. Do not just copy new fragments over older rules. Test a member-visible roster, an admin-only roster, removal, and restoration with the separate approved test member account before storing sensitive volunteer information.
+
+## Ministry picker, rolling weekly schedules, and prayer request moderation
+
+- **Serve navigation:** after sign-in, choose one ministry from a picker rather than displaying every ministry's positions at once. Existing ministry documents are unchanged.
+- **Weekly recurring schedules:** administrators add a title, weekday, start/end time, notes, and roster audience inside a volunteer position. Schedules are stored under `ministries/{ministryId}/positions/{positionId}/recurring/{scheduleId}`.
+- The app calculates the **next five upcoming occurrences** from the current America/Chicago church date. Past occurrences roll out of the display without deleting their signup records. This requires no scheduled background job, but a page refresh/reopen is needed if the page remains open across the rollover.
+- Approved members may join/cancel each occurrence, volunteer for the next **4 weeks** (approx. month), or next **13 weeks** (approx. three months) in one action. Multiweek signup preserves already registered dates and uses an atomic Firestore batch for new dates.
+- A schedule can be stopped by an administrator without destroying historical signups. Editing a recurrence or rescheduling an individual date are future features.
+- **Prayer moderation:** administrators can Remove and Restore prayers. Removal changes `status` to `removed`, hides those requests from ordinary member queries, and preserves the original document and acknowledgements for recovery. This is not permanent deletion.
+- Firebase permissions for recurring signups and removed prayers are included in the source `firestore.rules`, which must be **published separately** to the project's Firestore Rules page.
+- Member prayer queries now include visibility + status; their Firestore composite indexes are declared in `firestore.indexes.json`. Creating this file in GitHub **does not deploy the indexes**. If Firebase reports a missing index on the Prayer Wall, create the corresponding Firestore index in the console or deploy the JSON with Firebase CLI; do not expose removed prayer requests by weakening security rules.
+- Test with non-sensitive records and both administrator and approved test member accounts before using these new features for church operations.
