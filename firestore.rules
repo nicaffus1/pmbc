@@ -97,9 +97,10 @@ service cloud.firestore {
         allow create: if approvedMember()
           && request.auth.uid == memberId
           && canReadPrayer(parentPrayer()) && parentPrayer().status == 'active'
-          && request.resource.data.keys().hasOnly(['createdAt','count'])
-          && request.resource.data.keys().hasAll(['createdAt','count'])
+          && request.resource.data.keys().hasOnly(['createdAt','count','lastPrayedAt'])
+          && request.resource.data.keys().hasAll(['createdAt','count','lastPrayedAt'])
           && request.resource.data.createdAt == request.time
+          && request.resource.data.lastPrayedAt == request.time
           && request.resource.data.count == 1;
         // Subsequent prayers increment the member's personal count one at a time.
         allow update: if approvedMember()
@@ -110,7 +111,11 @@ service cloud.firestore {
           && request.resource.data.count is int
           && request.resource.data.count ==
             (('count' in resource.data) ? resource.data.count : 1) + 1
-          && request.resource.data.lastPrayedAt == request.time;
+          && request.resource.data.lastPrayedAt == request.time
+          && request.time >=
+            (('lastPrayedAt' in resource.data)
+              ? resource.data.lastPrayedAt
+              : resource.data.createdAt) + duration.value(1, 'h');
         // No member can erase past prayer acknowledgements.
         allow delete: if false;
       }
