@@ -24,6 +24,18 @@ const signedInMessage = () => !user ? "Sign in to view private member informatio
 const info = (title, body) => `<article class="card"><strong class="itemtitle">${escapeHTML(title)}</strong><p>${escapeHTML(body)}</p></article>`;
 const badge = (text) => `<span class="pill">${escapeHTML(text)}</span>`;
 
+function churchInfo(){
+ return `<section class="card church-info" aria-label="Church information">
+   <h2>Providence Missionary Baptist Church</h2>
+   <p>We are a group of believers working together to share the gospel of Christ to our community and to the world! We love God and we love people!</p>
+   <div class="church-contact">
+     <div><strong>Location</strong><a href="https://www.google.com/maps/search/?api=1&query=1129%20CR%201265%2C%20Center%2C%20TX" target="_blank" rel="noopener noreferrer">1129 CR 1265, Center, TX</a></div>
+     <div><strong>Website</strong><a href="https://providence.center" target="_blank" rel="noopener noreferrer">providence.center</a></div>
+     <div><strong>Email</strong><a href="mailto:church@providence.center">church@providence.center</a></div>
+     <div><strong>Facebook</strong><a href="https://www.facebook.com/share/19xnAkbkgi/" target="_blank" rel="noopener noreferrer">Providence Missionary Baptist Church</a></div>
+   </div>
+ </section>`;
+}
 function home() {
  return `<section class="card hero"><span class="eyebrow">PMBC</span><h1>Welcome to PMBC</h1><p>Worship. Pray. Connect. Serve.</p></section>
  <div class="grid"><button class="tile" data-go="prayer"><span class="emoji">♡</span><strong>Prayer</strong></button>
@@ -31,7 +43,8 @@ function home() {
  <button class="tile" data-go="more"><span class="emoji">▣</span><strong>Announcements</strong></button>
  <button class="tile" data-go="more"><span class="emoji">▤</span><strong>Church Information</strong></button></div>
  <h2>Announcements</h2>${info("No announcements available","Nothing has been published yet.")}
- <h2>Events</h2>${info("No events available","Nothing has been scheduled yet.")}`;
+ <h2>Events</h2>${info("No events available","Nothing has been scheduled yet.")}
+ <h2>Our Church</h2>${churchInfo()}`;
 }
 function prayer() {
  return '<div id="prayer-root"></div>';
@@ -66,7 +79,7 @@ function more() {
  return `<span class="eyebrow">Church community</span><h1>More</h1>
  ${accountError ? `<p role="alert" class="error">${escapeHTML(accountError)}</p>` : ""}
  ${user ? (review && isAdmin()? adminView() : account()) : form()}
- ${info("Church Information","Giving link and church service times have not been configured.")}`;
+ ${churchInfo()}`;
 }
 function adminView() {
  if(!review) return account();
