@@ -71,7 +71,7 @@ function drawList(){
    return;
  }
  if(loaded.size === 0){list.innerHTML='<p class="muted">Loading prayer requests…</p>';return;}
- const visible=[...requestsById.entries()].sort((a,b)=>
+ const visible=[...requestsById.entries()].filter(([,p])=>p.status!=="removed"||isAdmin()).sort((a,b)=>
    (b[1].createdAt?.toMillis?.()||0)-(a[1].createdAt?.toMillis?.()||0));
  if(visible.length===0){list.innerHTML='<div class="notice">No prayer requests yet. You can be the first to share one.</div>';return;}
  list.innerHTML=visible.map(([id,p])=>{
@@ -81,11 +81,12 @@ function drawList(){
    return `<article class="card prayer-entry">
     <div class="row"><strong class="itemtitle">${esc(p.authorName||"Church Member")}</strong>
       <span class="pill ${p.visibility==="leadership"?"warning":""}">${p.visibility==="leadership"?"Leadership Only":"Members"}</span></div>
-    <p class="section-note">${formatDate(p.createdAt)} · ${p.status==="answered"?"Answered / Update":"Prayer Needed"}</p>
+    <p class="section-note">${formatDate(p.createdAt)} · ${p.status==="removed"?"Removed by Administrator":p.status==="answered"?"Answered / Update":"Prayer Needed"}</p>
     <p class="prayer-body">${escapeRequestText(p.text)}</p>
     <div class="button-row">
-      <button class="button ${state?"outline":""}" data-prayed="${esc(id)}" type="button" ${busy?"disabled":""}>${state?"✓ I Prayed":"♡ I Prayed"}</button>
-      ${allowedToEdit?`<button class="button outline" data-edit-prayer="${esc(id)}" type="button">Edit Request</button>`:""}
+      ${p.status!=="removed"?`<button class="button ${state?"outline":""}" data-prayed="${esc(id)}" type="button" ${busy?"disabled":""}>${state?"✓ I Prayed":"♡ I Prayed"}</button>`:""}
+      ${allowedToEdit&&p.status!=="removed"?`<button class="button outline" data-edit-prayer="${esc(id)}" type="button">Edit Request</button>`:""}
+      ${isAdmin()?`<button class="button outline" data-remove-prayer="${esc(id)}" type="button">${p.status==="removed"?"Restore Request":"Remove Request"}</button>`:""}
     </div>
    </article>`;
  }).join("");
@@ -117,8 +118,8 @@ function watchFeed(){
  const jobs=isAdmin()
   ? [{name:"all",ref:collection(db,"prayers")}]
   : [
-      {name:"members",ref:query(collection(db,"prayers"),where("visibility","==","members"))},
-      {name:"mine",ref:query(collection(db,"prayers"),where("authorId","==",currentUser.uid))}
+      {name:"members",ref:query(collection(db,"prayers"),where("visibility","==","members"),where("status","in",["active","answered"]))},
+      {name:"mine",ref:query(collection(db,"prayers"),where("authorId","==",currentUser.uid),where("status","in",["active","answered"]))}
     ];
  const marker=session;
  for(const job of jobs){
@@ -203,9 +204,24 @@ function edit(id){
  currentRoot.querySelector("#prayerStatusSection").hidden=false;
  currentRoot.querySelector("#prayerComposer").scrollIntoView({behavior:"smooth",block:"start"});
 }
+async function toggleRemove(id){
+ if(!isAdmin()||busy)return;
+ const prayer=requestsById.get(id);if(!prayer)return;
+ const removing=prayer.status!=="removed";
+ if(!window.confirm(removing?"Remove this prayer from all member views? You can restore it later.":"Restore this prayer to the Prayer Wall?"))return;
+ busy=true;drawList();
+ try{
+  await updateDoc(doc(db,"prayers",id),{
+   status:removing?"removed":"active",updatedAt:serverTimestamp()
+  });
+  setNotice(removing?"Prayer removed from member views.":"Prayer restored.");
+ }catch(error){setNotice("Couldn't update the prayer ("+(error.code||"error")+"). Check Firestore rules.",true);}
+ finally{busy=false;drawList();}
+}
 function handleClick(e){
  const b=e.target.closest("button");if(!b)return;
- if(b.dataset.prayed){markPrayed(b.dataset.prayed);}
+ if(b.dataset.removePrayer){toggleRemove(b.dataset.removePrayer);}
+ else if(b.dataset.prayed){markPrayed(b.dataset.prayed);}
  else if(b.dataset.editPrayer){edit(b.dataset.editPrayer);}
  else if(b.id==="cancelPrayerEdit"){resetEdit();setNotice("");}
 }
