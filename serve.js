@@ -13,6 +13,7 @@ let root=null, account=null, profile=null, sequence=0;
 let stops=[], ministries=new Map(), positions=new Map(), joined=new Map();
 let shifts=new Map(), shiftJoined=new Map();
 let knownPositionListeners=new Set(), knownShiftListeners=new Set(), pendingWrites=new Set();
+let selectedMinistryId="", expandedPanels=new Set();
 
 const approved=()=>!!account && profile?.status==="approved";
 const admin=()=>approved() && profile?.role==="admin";
@@ -66,7 +67,8 @@ function shiftList(mid,pid){
  }).join("");
  return `<div class="shift-list"><h4>Scheduled Shifts</h4>
   ${rows||'<p class="muted">No scheduled shifts yet.</p>'}
-  ${admin()?`<form class="stack shift-form" data-shift-form data-mid="${esc(mid)}" data-pid="${esc(pid)}">
+  ${admin()?`<details class="admin-expander" data-panel="shift:${esc(mid)}:${esc(pid)}"><summary>Add a Shift</summary>
+  <form class="stack shift-form" data-shift-form data-mid="${esc(mid)}" data-pid="${esc(pid)}">
     <label>Shift date<input class="field" name="date" type="date" required></label>
     <div class="shift-time-row">
       <label>Start time<input class="field" name="start" type="time" required></label>
@@ -74,8 +76,8 @@ function shiftList(mid,pid){
     </div>
     <label>Notes (optional)<input class="field" name="notes" maxlength="300"></label>
     <p class="section-note">Times are Central Time. Each shift starts and ends on the same day.</p>
-    <button class="button outline" type="submit">Add Shift</button>
-  </form>`:""}
+    <button class="button outline" type="submit">Save Shift</button>
+  </form></details>`:""}
  </div>`;
 }
 function watchShiftSignup(mid,pid,sid,token){
@@ -124,25 +126,50 @@ function ministryUI(entry){
   ${data.description?`<p>${esc(data.description)}</p>`:""}
   <h3 class="ministry-subtitle">Ways to Serve</h3>
   ${items.length?items.map(p=>positionUI(id,p)).join(""):'<p class="muted">No volunteer positions yet.</p>'}
-  ${admin()?`<form class="stack position-form" data-position-form data-mid="${esc(id)}">
+  ${admin()?`<details class="admin-expander" data-panel="position:${esc(id)}"><summary>Add a Volunteer Position</summary>
+  <form class="stack position-form" data-position-form data-mid="${esc(id)}">
    <label>New volunteer position
     <input class="field" name="title" minlength="2" maxlength="80" required
      placeholder="e.g. Classroom Helper"></label>
    <label>Description (optional)
     <textarea class="field" name="description" maxlength="500" rows="2"
      placeholder="What will a volunteer do?"></textarea></label>
-   <button class="button outline" type="submit">Add Position</button>
-  </form>`:""}
+   <button class="button outline" type="submit">Save Position</button>
+  </form></details>`:""}
  </article>`;
 }
 function draw(){
  const area=root?.querySelector("#ministriesList");if(!area)return;
+ // Snapshot updates must not collapse an administrator's open form.
+ for(const panel of area.querySelectorAll("details[data-panel]")){
+   const id=panel.dataset.panel;
+   if(panel.open)expandedPanels.add(id);
+   else expandedPanels.delete(id);
+ }
  const entries=[...ministries.values()].filter(m=>m.active)
    .sort((a,b)=>a.name.localeCompare(b.name));
- if(!entries.length) {
-   area.innerHTML='<div class="notice">No ministries have been added yet.</div>';return;
+ const picker=root.querySelector("#ministryPicker");
+ if(picker){
+   const choices=entries.map(m=>m.id);
+   if(!choices.includes(selectedMinistryId))selectedMinistryId=choices[0]||"";
+   const desired=choices.join("|");
+   if(picker.dataset.options!==desired){
+     picker.innerHTML=entries.length?
+       entries.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name)+'</option>').join(""):
+       '<option value="">No ministries yet</option>';
+     picker.dataset.options=desired;
+   }
+   picker.value=selectedMinistryId;
  }
- area.innerHTML=entries.map(ministryUI).join("");
+ if(!entries.length){
+   area.innerHTML='<div class="notice">No ministries have been added yet.</div>';
+   return;
+ }
+ const chosen=entries.find(m=>m.id===selectedMinistryId);
+ area.innerHTML=chosen?ministryUI(chosen):"";
+ for(const panel of area.querySelectorAll("details[data-panel]")){
+   panel.open=expandedPanels.has(panel.dataset.panel);
+ }
 }
 function watchSignup(mid,pid,token){
  const key=positionKey(mid,pid);
@@ -182,9 +209,10 @@ async function addMinistry(event){
  }
  const button=form.querySelector("button[type=submit]");button.disabled=true;
  try{
-   await addDoc(collection(db,"ministries"),{
+   const created=await addDoc(collection(db,"ministries"),{
      name,description,active:true,createdBy:account.uid,createdAt:serverTimestamp()
    });
+   selectedMinistryId=created.id;
    form.reset();notice("Ministry added.");
  }catch(err){notice("Couldn't add ministry ("+(err.code||"error")+").",true);}
  finally{if(button.isConnected)button.disabled=false;}
@@ -280,6 +308,13 @@ async function toggleShift(button){
  }finally{pendingWrites.delete(lock);draw();}
 }
 
+function onChange(event){
+ if(event.target.id==="ministryPicker"){
+   selectedMinistryId=event.target.value;
+   expandedPanels.clear();
+   draw();
+ }
+}
 function onClick(event){
  const button=event.target.closest("[data-toggle-signup]");
  if(button){toggleSignup(button);return;}
@@ -297,6 +332,7 @@ export function unmountServe(){
  stops=[];ministries=new Map();positions=new Map();joined=new Map();
  shifts=new Map();shiftJoined=new Map();
  knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();
+ selectedMinistryId="";expandedPanels=new Set();
  root=null;account=null;profile=null;
 }
 export function mountServe(container,user,userProfile){
@@ -310,8 +346,8 @@ export function mountServe(container,user,userProfile){
  root.innerHTML=`<span class="eyebrow">Get involved</span><h1>Serve</h1>
  <p class="muted">Find a ministry and sign up for a scheduled shift.</p>
  <div id="serveMessage" hidden></div>
- ${admin()?`<section class="card" id="ministryComposer">
-  <h2>Create a Ministry</h2>
+ ${admin()?`<details class="card admin-expander ministry-composer" id="ministryComposer">
+  <summary>Create a Ministry</summary>
   <form id="ministryForm" class="stack">
    <label for="ministryName">Ministry name</label>
    <input class="field" id="ministryName" name="ministryName" minlength="2" maxlength="80" required>
@@ -319,11 +355,14 @@ export function mountServe(container,user,userProfile){
    <textarea class="field" id="ministryDescription" name="ministryDescription" rows="3" maxlength="500"></textarea>
    <button class="button" type="submit">Add Ministry</button>
   </form>
- </section>`:""}
+ </details>`:""}
  <h2>Church Ministries</h2>
+ <label class="ministry-picker-label" for="ministryPicker">Select a Ministry</label>
+ <select id="ministryPicker" class="field" aria-label="Select a Ministry"></select>
  <div id="ministriesList" aria-live="polite"><p class="muted">Loading ministries…</p></div>`;
  root.addEventListener("submit",onSubmit);
  root.addEventListener("click",onClick);
+ root.addEventListener("change",onChange);
  const token=sequence;
  stops.push(onSnapshot(collection(db,"ministries"),snap=>{
    if(token!==sequence)return;
