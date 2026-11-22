@@ -150,21 +150,50 @@ function syncPrayed(){
    }).catch(()=>{});
  }
 }
+function syncTotals(){
+ const keep=new Set();
+ for(const [id,p] of activeRequests()){
+   if(p.authorId!==currentUser.uid&&!isAdmin())continue;
+   keep.add(id);
+   if(totalListeners.has(id))continue;
+   const marker=session;
+   const unsubscribe=onSnapshot(collection(db,"prayers",id,"prayedBy"),snapshot=>{
+     if(marker!==session)return;
+     const total=snapshot.docs.reduce((sum,d)=>sum+(Number.isInteger(d.data().count)?d.data().count:1),0);
+     prayerTotals.set(id,total);
+     drawList();
+   },error=>{
+     if(marker!==session)return;
+     prayerTotals.delete(id);
+     setNotice("Unable to load your prayer totals ("+(error.code||"error")+"). The updated Firestore rules may need publishing.",true);
+   });
+   totalListeners.set(id,unsubscribe);
+ }
+ for(const [id,stop] of totalListeners){
+   if(keep.has(id))continue;
+   try{stop();}catch{}
+   totalListeners.delete(id);
+   prayerTotals.delete(id);
+ }
+}
 function updateFeed(feedName,snapshot,streams){
  const set=new Map(snapshot.docs.map(d=>[d.id,d.data()]));
  streams.set(feedName,set);
  requestsById=new Map();
  for(const entries of streams.values())for(const [id,p] of entries)requestsById.set(id,p);
  syncPrayed();
+ syncTotals();
  drawList();
 }
 function watchFeed(){
  const streams=new Map();
  const jobs=isAdmin()
-  ? [{name:"all",ref:collection(db,"prayers")}]
+  ? [{name:"all",ref:query(collection(db,"prayers"),where("status","==","active"))}]
   : [
-      {name:"members",ref:query(collection(db,"prayers"),where("visibility","==","members"))},
-      {name:"mine",ref:query(collection(db,"prayers"),where("authorId","==",currentUser.uid))}
+      {name:"members",ref:query(collection(db,"prayers"),
+        where("visibility","==","members"),where("status","==","active"))},
+      {name:"mine",ref:query(collection(db,"prayers"),
+        where("authorId","==",currentUser.uid),where("status","==","active"))}
     ];
  const marker=session;
  for(const job of jobs){
