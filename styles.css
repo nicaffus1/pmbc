@@ -475,19 +475,3 @@ html.dark-mode{color-scheme:dark;background:#0b1420;color:#e3edf5}
 .sermon-archive{margin:25px 0 14px;padding:18px;border:1px solid #e1eaf0;border-radius:13px}
 .sermon-archive p{font-size:13px;line-height:1.5;margin:0 0 12px}
 .dark-mode .sermon-archive{background:#192a3c;border-color:#344b5e}
-
-/* Sermon archive and admin tagging controls. */
-.sermon-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 20px}
-.sermon-filters label,.sermon-editor label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700}
-.sermon-filters label:first-child{grid-column:1/-1}
-.sermon-filters .field,.sermon-editor .field{width:100%;box-sizing:border-box;min-width:0}
-.sermon-card-meta{display:flex;flex-wrap:wrap;gap:5px 9px;font-size:11px}
-.sermon-tags{display:flex;flex-wrap:wrap;gap:5px}
-.sermon-topic{font-size:11px;font-weight:650;padding:3px 8px;border-radius:20px;background:#e7f2f6;color:#15586d}
-.sermon-editor{margin:30px 0 20px;padding:18px;border:1px solid #d7e5ed;border-radius:14px;background:#f7fafc}
-.sermon-editor h2{margin:0 0 6px;font-size:19px}
-.sermon-editor form{margin-top:14px}
-.sermon-editor textarea{resize:vertical}
-.dark-mode .sermon-editor{background:#192a3c;border-color:#344b5e}
-.dark-mode .sermon-topic{background:#254b60;color:#d9f4fb}
-@media(max-width:380px){.sermon-filters{grid-template-columns:1fr}}
