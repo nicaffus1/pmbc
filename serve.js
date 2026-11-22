@@ -249,8 +249,36 @@ function positionUI(mid,entry){
   </details>`:""}
  </section>`;
 }
+function ministryAdministrationUI(entry){
+ if(!admin())return "";
+ const mid=entry?.id||"";
+ return `<details class="ministry-manage-panel" data-panel="manage-all-ministries">
+   <summary>Manage Ministries</summary>
+   <div class="ministry-manage-content">
+     <details class="admin-expander" data-panel="create-ministry">
+       <summary>+ Create a ministry</summary>
+       <form id="ministryForm" class="stack">
+         <label for="ministryName">Ministry name</label>
+         <input class="field" id="ministryName" name="ministryName" minlength="2" maxlength="80" required>
+         <label for="ministryDescription">Description (optional)</label>
+         <textarea class="field" id="ministryDescription" name="ministryDescription" rows="3" maxlength="500"></textarea>
+         <button class="button" type="submit">Add Ministry</button>
+       </form>
+     </details>
+     ${entry?`<details class="manage-menu ministry-manage" data-panel="remove-ministry:${esc(mid)}">
+       <summary>Remove selected ministry</summary>
+       <div class="manage-menu-body">
+         <p class="section-note">Remove ${esc(entry.name)} from active ministries. Its positions, shifts, and sign-ups will be preserved.</p>
+         <button type="button" class="button outline remove-control"
+           data-archive-item="ministry" data-mid="${esc(mid)}">Remove ${esc(entry.name)}</button>
+       </div>
+     </details>`:""}
+     ${archivedMinistriesUI()}
+   </div>
+ </details>`;
+}
 function ministryUI(entry){
- const {id,...data}=entry;
+ const {id}=entry;
  const items=[...(positions.get(id)?.values()||[])].filter(p=>p.active)
    .sort((a,b)=>a.title.localeCompare(b.title));
  const current=selectedPositionByMinistry.get(id);
@@ -258,38 +286,25 @@ function ministryUI(entry){
  selectedPositionByMinistry.set(id,selected);
  const chosen=items.find(p=>p.id===selected);
  return `<article class="card ministry-item compact-ministry">
-  <label class="position-picker-label" for="positionPicker">Select a Volunteer Position</label>
+  <div class="position-picker-heading">
+    <label class="position-picker-label" for="positionPicker">Select a Volunteer Position</label>
+    ${admin()?`<details class="position-add-compact" data-panel="position:${esc(id)}">
+      <summary>+ Add</summary>
+      <form class="stack position-form" data-position-form data-mid="${esc(id)}">
+        <label>Position name
+          <input class="field" name="title" minlength="2" maxlength="80" required placeholder="e.g. Classroom Helper"></label>
+        <label>Description (optional)
+          <textarea class="field" name="description" maxlength="500" rows="2" placeholder="What will a volunteer do?"></textarea></label>
+        <button class="button" type="submit">Save Position</button>
+      </form>
+    </details>`:""}
+  </div>
   <select class="field position-picker" id="positionPicker" aria-label="Select a Volunteer Position"
    ${items.length?"":"disabled"}>
    ${items.length?items.map(p=>`<option value="${esc(p.id)}" ${p.id===selected?"selected":""}>${esc(p.title)}</option>`).join(""):
       '<option value="">No volunteer positions yet</option>'}
   </select>
-  ${admin()?`<details class="ministry-settings" data-panel="ministry-settings:${esc(id)}">
-    <summary><span class="ministry-settings-heading">Ministry Settings</span><span class="ministry-settings-hint">Admin only</span></summary>
-    <div class="ministry-settings-content">
-      <details class="admin-expander" data-panel="position:${esc(id)}">
-        <summary>Add volunteer position</summary>
-        <form class="stack position-form" data-position-form data-mid="${esc(id)}">
-          <label>Position name
-            <input class="field" name="title" minlength="2" maxlength="80" required
-              placeholder="e.g. Classroom Helper"></label>
-          <label>Description (optional)
-            <textarea class="field" name="description" maxlength="500" rows="2"
-              placeholder="What will a volunteer do?"></textarea></label>
-          <button class="button" type="submit">Save Position</button>
-        </form>
-      </details>
-      ${archivedPositionsUI(id)}
-      <details class="manage-menu ministry-manage" data-panel="manage-ministry:${esc(id)}">
-        <summary>Remove this ministry</summary>
-        <div class="manage-menu-body">
-          <p class="section-note">Hides its positions and shifts. Existing sign-ups are preserved and it can be restored.</p>
-          <button type="button" class="button outline remove-control"
-            data-archive-item="ministry" data-mid="${esc(id)}">Confirm removal…</button>
-        </div>
-      </details>
-    </div>
-  </details>`:""}
+  ${admin()?archivedPositionsUI(id):""}
   ${chosen?positionUI(id,chosen):'<p class="muted position-empty">No active volunteer positions in this ministry.</p>'}
  </article>`;
 }
@@ -325,9 +340,9 @@ function draw(){
    picker.value=selectedMinistryId;
  }
  const chosen=entries.find(m=>m.id===selectedMinistryId);
- area.innerHTML=(chosen?ministryUI(chosen):
-   '<div class="notice">No active ministries. An administrator can create or restore one.</div>')+
-   (admin()?archivedMinistriesUI():"");
+ area.innerHTML=(admin()?ministryAdministrationUI(chosen):"")+
+   (chosen?ministryUI(chosen):
+   '<div class="notice">No active ministries. An administrator can create or restore one.</div>');
  for(const panel of area.querySelectorAll("details[data-panel]")){
    const id=panel.dataset.panel;
    panel.open=expandedPanels.has(id);
@@ -636,16 +651,6 @@ export function mountServe(container,user,userProfile){
  root.innerHTML=`<span class="eyebrow">Get involved</span><h1>Serve</h1>
  <p class="muted">Find a ministry and sign up for a scheduled shift.</p>
  <div id="serveMessage" hidden></div>
- ${admin()?`<details class="card admin-expander ministry-composer" id="ministryComposer">
-  <summary>Create a Ministry</summary>
-  <form id="ministryForm" class="stack">
-   <label for="ministryName">Ministry name</label>
-   <input class="field" id="ministryName" name="ministryName" minlength="2" maxlength="80" required>
-   <label for="ministryDescription">Description (optional)</label>
-   <textarea class="field" id="ministryDescription" name="ministryDescription" rows="3" maxlength="500"></textarea>
-   <button class="button" type="submit">Add Ministry</button>
-  </form>
- </details>`:""}
  <h2>Church Ministries</h2>
  <label class="ministry-picker-label" for="ministryPicker">Select a Ministry</label>
  <select id="ministryPicker" class="field" aria-label="Select a Ministry"></select>
