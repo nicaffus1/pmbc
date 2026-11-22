@@ -65,6 +65,9 @@ function shiftList(mid,pid){
     <strong>${showShiftTime(x.startsAt)} to ${showShiftTime(x.endsAt).split(" · ").pop()} CT</strong>
     ${x.notes?`<p>${esc(x.notes)}</p>`:""}
     ${rosterMarkup}
+    ${admin()?`<button type="button" class="button outline remove-control"
+      data-archive-item="shift" data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}">
+      Remove Shift</button>`:""}
     ${admin()&&visibility!=="members"?`<button type="button" class="button outline roster-share"
       data-share-roster data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}">
       Share volunteer names with members</button>`:""}
@@ -77,6 +80,7 @@ function shiftList(mid,pid){
  }).join("");
  return `<div class="shift-list"><h4>Scheduled Shifts</h4>
   ${rows||'<p class="muted">No scheduled shifts yet.</p>'}
+  ${admin()?archivedShiftsUI(mid,pid):""}
   ${admin()?`<details class="admin-expander" data-panel="shift:${esc(mid)}:${esc(pid)}"><summary>Add a Shift</summary>
   <form class="stack shift-form" data-shift-form data-mid="${esc(mid)}" data-pid="${esc(pid)}">
     <label>Shift date<input class="field" name="date" type="date" required></label>
@@ -143,12 +147,48 @@ function watchShifts(mid,pid,token){
  }));
 }
 
+function archivedShiftsUI(mid,pid){
+ const archived=[...(shifts.get(positionKey(mid,pid))?.values()||[])]
+  .filter(item=>item.active===false)
+  .sort((a,b)=>b.startsAt.localeCompare(a.startsAt));
+ if(!archived.length)return "";
+ return `<details class="archive-list" data-panel="archived-shifts:${esc(mid)}:${esc(pid)}">
+ <summary>Removed Shifts (${archived.length})</summary>
+ ${archived.map(item=>`<div class="archive-row"><span>${showShiftTime(item.startsAt)}</span>
+  <button type="button" class="button outline" data-restore-item="shift"
+   data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(item.id)}">Restore</button></div>`).join("")}
+ </details>`;
+}
+function archivedPositionsUI(mid){
+ const archived=[...(positions.get(mid)?.values()||[])].filter(item=>item.active===false)
+  .sort((a,b)=>a.title.localeCompare(b.title));
+ if(!archived.length)return "";
+ return `<details class="archive-list" data-panel="archived-positions:${esc(mid)}">
+ <summary>Removed Positions (${archived.length})</summary>
+ ${archived.map(item=>`<div class="archive-row"><span>${esc(item.title)}</span>
+ <button type="button" class="button outline" data-restore-item="position"
+  data-mid="${esc(mid)}" data-pid="${esc(item.id)}">Restore</button></div>`).join("")}
+ </details>`;
+}
+function archivedMinistriesUI(){
+ const archived=[...ministries.values()].filter(item=>item.active===false)
+  .sort((a,b)=>a.name.localeCompare(b.name));
+ if(!archived.length)return "";
+ return `<details class="archive-list archived-ministries" data-panel="archived-ministries">
+ <summary>Removed Ministries (${archived.length})</summary>
+ ${archived.map(item=>`<div class="archive-row"><span>${esc(item.name)}</span>
+ <button type="button" class="button outline" data-restore-item="ministry"
+  data-mid="${esc(item.id)}">Restore</button></div>`).join("")}
+ </details>`;
+}
+
 function positionUI(mid,entry){
  const {id,...data}=entry;
  return `<div class="position-item">
   <strong>${esc(data.title)}</strong>
   ${data.description?`<p>${esc(data.description)}</p>`:""}
   ${shiftList(mid,id)}
+  ${admin()?`<button type="button" class="button outline remove-control" data-archive-item="position" data-mid="${esc(mid)}" data-pid="${esc(id)}">Remove Position</button>`:""}
  </div>`;
 }
 function ministryUI(entry){
@@ -157,6 +197,7 @@ function ministryUI(entry){
    .sort((a,b)=>a.title.localeCompare(b.title));
  return `<article class="card ministry-item compact-ministry">
   ${items.length?items.map(p=>positionUI(id,p)).join(""):'<p class="muted">No volunteer positions yet.</p>'}
+  ${admin()?archivedPositionsUI(id):""}
   ${admin()?`<details class="admin-expander" data-panel="position:${esc(id)}"><summary>Add a Volunteer Position</summary>
   <form class="stack position-form" data-position-form data-mid="${esc(id)}">
    <label>New volunteer position
@@ -167,6 +208,8 @@ function ministryUI(entry){
      placeholder="What will a volunteer do?"></textarea></label>
    <button class="button outline" type="submit">Save Position</button>
   </form></details>`:""}
+  ${admin()?`<button type="button" class="button outline remove-control remove-ministry"
+   data-archive-item="ministry" data-mid="${esc(id)}">Remove Ministry</button>`:""}
  </article>`;
 }
 function draw(){
@@ -192,12 +235,10 @@ function draw(){
    }
    picker.value=selectedMinistryId;
  }
- if(!entries.length){
-   area.innerHTML='<div class="notice">No ministries have been added yet.</div>';
-   return;
- }
  const chosen=entries.find(m=>m.id===selectedMinistryId);
- area.innerHTML=chosen?ministryUI(chosen):"";
+ area.innerHTML=(chosen?ministryUI(chosen):
+   '<div class="notice">No active ministries. An administrator can create or restore one.</div>')+
+   (admin()?archivedMinistriesUI():"");
  for(const panel of area.querySelectorAll("details[data-panel]")){
    panel.open=expandedPanels.has(panel.dataset.panel);
  }
