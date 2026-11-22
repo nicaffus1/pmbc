@@ -1,6 +1,7 @@
 // PMBC Notifications — in-app inbox and administrator notices.
 // Device push delivery and scheduled reminder jobs require a trusted backend.
-import { db } from "./firebase.js";
+import { auth,db } from "./firebase.js";
+import { PUSH_SENDER_URL } from "./push-sender-config.js";
 import { enablePush,pushSupport } from "./push-client.js";
 import {
  collection,doc,addDoc,setDoc,onSnapshot,serverTimestamp,updateDoc,query,where
@@ -10,6 +11,36 @@ const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 let root=null,uid="",admin=false,approved=false,seq=0,stops=[];
 let notices=new Map(),reads=new Map(),streams=new Map(),message="",error=false,waiting=false;
 let deviceToken="";
+const senderConfigured=()=>/^https:\/\/[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev\/?$/i.test(PUSH_SENDER_URL.trim());
+async function sendPhonePush(id){
+ if(!admin||!auth.currentUser)throw Error("An approved administrator must be signed in.");
+ if(!senderConfigured())throw Error("Phone sender is not connected yet. Follow PUSH_SENDER_SETUP.md to deploy it.");
+ const idToken=await auth.currentUser.getIdToken();
+ let offset=0,sent=0,failed=0,total=0,attempts=0;
+ do{
+  const res=await fetch(PUSH_SENDER_URL.replace(/\/$/,"")+"/send",{
+   method:"POST",headers:{"Authorization":"Bearer "+idToken,"content-type":"application/json"},
+   body:JSON.stringify({notificationId:id,offset})
+  });
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok)throw Error(data.error||"Phone sender request failed ("+res.status+").");
+  sent+=Number(data.sent||0);failed+=Number(data.failed||0);total=Number(data.total||0);
+  if(data.done||data.nextOffset==null)break;
+  if(++attempts>=20)throw Error("Too many delivery batches.");
+  offset=data.nextOffset;
+ }while(true);
+ return {sent,failed,total};
+}
+async function sendExisting(id){
+ if(waiting||!admin)return;
+ waiting=true;
+ try{
+  const report=await sendPhonePush(id);
+  setMessage("Phone delivery requested: "+report.sent+" accepted, "+report.failed+" failed of "+report.total+" registered devices.");
+ }catch(e){setMessage("Phone alert not completed: "+(e.message||"Unknown error"),true);}
+ finally{waiting=false;}
+}
+
 const labels={general:"General",event:"Event",prayer:"Prayer",serve:"Serve",admin:"Administration"};
 function visibleRecords(){
  const merged=new Map();
@@ -32,6 +63,8 @@ function render(){
     '<button type="button" class="button outline" data-mark-read="'+esc(id)+'">Mark as read</button>':
     '<span class="section-note">Read</span>')+
    (n.linkTab?'<button type="button" class="button outline" data-notification-tab="'+esc(n.linkTab)+'">Open '+esc(n.linkTab)+'</button>':"")+
+   (admin&&n.createdBy===uid?'<button type="button" class="button outline" data-notification-send="'+esc(id)+'">'+
+    (senderConfigured()?'Send phone alert':'Phone sender not connected')+'</button>':"")+
    (admin?'<button type="button" class="button outline notification-remove" data-notification-remove="'+esc(id)+'">Remove</button>':"")+
    '</div></article>';
  }).join(""):'<div class="card empty-update"><p>No notifications yet.</p></div>';
@@ -57,11 +90,18 @@ async function submit(event){
  ))return;
  const btn=f.querySelector('[type="submit"]');waiting=true;btn.disabled=true;
  try{
-  await addDoc(collection(db,"notifications"),{
+  const newNotice=await addDoc(collection(db,"notifications"),{
    title,body,audience,kind,linkTab,active:true,createdBy:uid,createdAt:serverTimestamp()
   });
   f.reset();f.closest("details").open=false;
-  setMessage("Published to the in-app inbox. To send a phone push on the free plan, use Firebase Messaging separately.");
+  if(senderConfigured()){
+   try{
+    const report=await sendPhonePush(newNotice.id);
+    setMessage("Published to inbox. Phone push: "+report.sent+" accepted, "+report.failed+" failed of "+report.total+" registered devices.");
+   }catch(pushError){
+    setMessage("Saved to inbox, but phone delivery didn't finish: "+pushError.message,true);
+   }
+  }else setMessage("Saved to inbox. Phone alerts are not connected yet; configure your Cloudflare Worker.");
  }catch(e){setMessage("Could not publish notification ("+(e.code||"error")+"). Publish the updated Firebase rules.",true);}
  finally{waiting=false;if(btn.isConnected)btn.disabled=false;}
 }
@@ -111,6 +151,8 @@ function checkPushSupport(){
  }).catch(()=>{});
 }
 function click(event){
+ const phone=event.target.closest("[data-notification-send]");
+ if(phone){sendExisting(phone.dataset.notificationSend);return;}
  if(event.target.closest("#enablePush")){registerDevice();return;}
  if(event.target.closest("#copyPushToken")){
   const value=root?.querySelector("#pushDeviceToken")?.value;
@@ -158,8 +200,8 @@ export function mountNotifications(container,user,profile){
    '<option value="">No link</option><option value="home">Home</option>'+
    '<option value="prayer">Prayer</option><option value="serve">Serve</option>'+
    '<option value="more">More</option></select></label>'+
-   '<button class="button" type="submit">Publish to inbox</button>'+
-   '<p class="section-note">This sends an <strong>in-app message only</strong>. Phone push messages are sent separately through the free Firebase Messaging Console.</p>'+
+   '<button class="button" type="submit">'+(senderConfigured()?'Publish & Send Phone Alerts':'Publish to Inbox')+'</button>'+
+   '<p class="section-note">'+(senderConfigured()?'Phone pushes go to opted-in devices through the secure Cloudflare Worker.':'Cloudflare phone sender is not connected. This will publish to the inbox only.')+'</p>'+
    '</form></details>':"")+
   '<section class="card push-permission"><h2>Phone Alerts</h2>'+
   '<p id="pushSetupStatus" class="section-note">Checking push support…</p>'+
@@ -172,9 +214,9 @@ export function mountNotifications(container,user,profile){
    '<p class="section-note">Use this token in Firebase Messaging > Send test message. Each phone has its own token; never publish token lists on the church website.</p>'+
   '</div></section>'+
   '<h2>Inbox</h2><div id="notification-items" aria-live="polite"><p class="muted">Loading…</p></div>'+
-  '<p class="section-note">Manual phone push is sent from Firebase Console. Scheduled reminders are disabled in this free-plan setup.</p>'+
+  '<p class="section-note">Manual administrator phone push uses Cloudflare after setup. Scheduled reminders remain disabled.</p>'+
   (admin?'<div class="card manual-push-admin"><strong>Send a phone notification</strong>'+
-   '<p class="section-note">The free option uses Firebase Messaging. Sending an in-app inbox notice above does not also send a phone push.</p>'+
+   '<p class="section-note">'+(senderConfigured()?'Phone alerts are connected. Publish a notice above to send to registered devices.':'Deploy the free Cloudflare Worker and set its URL in push-sender-config.js to enable phone alerts here.')+'</p>'+
    '<a class="button outline" href="https://console.firebase.google.com/project/pmbc-d6d17/messaging" target="_blank" rel="noopener noreferrer">Open Firebase Messaging</a>'+
    '<p class="section-note">Create a notification campaign, or choose Send test message and paste a member\'s device token.</p></div>':"");
  root.addEventListener("click",click);
