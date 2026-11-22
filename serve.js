@@ -361,23 +361,36 @@ function watchPositions(mid,token){
  stops.push(unsub);
 }
 async function addMinistry(event){
- event.preventDefault();if(!admin())return;
- const form=event.target.closest("#ministryForm");
- if(!form)return;
- const name=String(form.elements.ministryName.value).trim();
- const description=String(form.elements.ministryDescription.value).trim();
- if(name.length<2||name.length>80||description.length>500){
-   notice("Check the ministry name and description lengths.",true);return;
+ event.preventDefault();
+ const form=event.currentTarget;
+ if(!admin()){
+  notice("Only approved administrators can add ministries. Check your account under More.",true);
+  return;
  }
- const button=form.querySelector("button[type=submit]");button.disabled=true;
+ const name=String(form.querySelector('[name="ministryName"]')?.value||"").trim();
+ const description=String(form.querySelector('[name="ministryDescription"]')?.value||"").trim();
+ if(name.length<2||name.length>80||description.length>500){
+  notice("Use a ministry name of 2–80 characters and a description under 500 characters.",true);return;
+ }
+ const button=form.querySelector('[type="submit"]');
+ if(button){button.disabled=true;button.textContent="Saving Ministry…";}
+ notice("Saving ministry to Firebase…");
  try{
-   const created=await addDoc(collection(db,"ministries"),{
-     name,description,active:true,createdBy:account.uid,createdAt:serverTimestamp()
-   });
-   selectedMinistry=created.id;
-   form.reset();notice("Ministry added. Select it below to manage volunteer positions.");
- }catch(err){notice("Couldn't add ministry ("+(err.code||"error")+").",true);}
- finally{if(button.isConnected)button.disabled=false;}
+  const created=await addDoc(collection(db,"ministries"),{
+   name,description,active:true,createdBy:account.uid,createdAt:serverTimestamp()
+  });
+  selectedMinistry=created.id;
+  form.reset();
+  notice("Ministry saved. It should appear selected below.");
+ }catch(error){
+  console.error("PMBC ministry save failed",error);
+  const code=error?.code||"unknown";
+  notice(code==="permission-denied"?
+   "Firebase denied this ministry. Confirm that you are signed in as an approved administrator. (permission-denied)":
+   "Could not save ministry ("+code+"): "+String(error?.message||"Please check your connection.").slice(0,170),true);
+ }finally{
+  if(button?.isConnected){button.disabled=false;button.textContent="Add Ministry";}
+ }
 }
 async function addPosition(event){
  const form=event.target.closest("[data-position-form]");
@@ -606,7 +619,6 @@ function onClick(event){
  if(archive)archiveRecurring(archive);
 }
 function onSubmit(event){
- if(event.target.matches("#ministryForm")){addMinistry(event);return;}
  if(event.target.matches("[data-position-form]")){addPosition(event);return;}
  if(event.target.matches("[data-shift-form]")){addShift(event);return;}
  if(event.target.matches("[data-recurring-form]"))addRecurring(event);
@@ -650,6 +662,7 @@ export function mountServe(container,user,userProfile){
  <label class="ministry-picker-label" for="ministryPicker">Select a ministry</label>
  <select class="field" id="ministryPicker"><option value="">Choose a ministry…</option></select>
  <div id="ministriesList" aria-live="polite"><p class="muted">Loading ministries…</p></div>`;
+ root.querySelector("#ministryForm")?.addEventListener("submit",addMinistry);
  root.addEventListener("submit",onSubmit);
  root.addEventListener("click",onClick);
  root.addEventListener("change",onChange);
