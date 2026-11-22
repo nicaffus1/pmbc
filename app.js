@@ -95,35 +95,14 @@ function churchInfo(){
  </section>`;
 }
 function facebookUpdates(){
+ const page="https://www.facebook.com/providencembccenter/";
  return `<section class="home-facebook-section" aria-label="Church updates from Facebook">
   <div class="home-heading"><h2>Church Updates</h2>
-   <a class="facebook-page-link" href="#news">View all updates →</a></div>
-  <p class="facebook-feed-intro">Latest news from our church</p>
+  <a class="facebook-page-link" href="${page}" target="_blank" rel="noopener noreferrer">Facebook ↗</a></div>
+  <p class="facebook-feed-intro">Shared from our church's Facebook Page.</p>
   <div id="facebook-post-list" aria-live="polite"><p class="muted">Loading church updates…</p></div>
-  <div id="facebook-carousel-dots" class="facebook-carousel-dots" aria-hidden="true" hidden></div>
  </section>`;
 }
-function churchNews(){
- return `<section class="church-news-page">
-  <a class="news-back" href="#home">← Back to Home</a>
-  <span class="eyebrow">Providence Missionary Baptist Church</span>
-  <h1>Church News</h1>
-  <p class="muted">Updates shared automatically from our church Facebook Page.</p>
-  <div id="church-news-list" aria-live="polite"><p class="muted">Loading church news…</p></div>
-  <a class="news-facebook-link" href="https://www.facebook.com/providencembccenter/" target="_blank" rel="noopener noreferrer">See more on Facebook ↗</a>
- </section>`;
-}
-function quickActions(){
- return `<section class="home-quick-actions" aria-label="Quick actions">
- <h2>Quick Actions</h2>
- <div class="quick-action-grid">
-  <a href="#prayer">♡ <span>Prayer Requests</span></a>
-  <a href="#serve">♧ <span>Serve</span></a>
-  <a href="https://giv.li/amnptg" target="_blank" rel="noopener noreferrer">↗ <span>Give Online</span></a>
-  <a href="#more">⌂ <span>Church Info</span></a>
- </div></section>`;
-}
-
 function home() {
  return `<section class="card hero home-welcome">
    <span class="eyebrow">Providence Missionary Baptist Church</span>
@@ -131,6 +110,7 @@ function home() {
    <p>Worship. Pray. Connect. Serve.</p>
  </section>
  <section id="daily-verse" class="daily-verse card" aria-label="Verse of the Day"></section>
+ ${givingCard(true)}
  ${facebookUpdates()}
  <div id="updates-notice" class="notice" hidden></div>
  <section class="home-updates" aria-label="Church updates">
@@ -152,7 +132,6 @@ function home() {
    <div id="home-events"><p class="muted">Loading events…</p></div>
    <div id="home-event-history"></div>
  </section>
- ${quickActions()}
  <section class="home-video-section" aria-label="Latest church videos">
   <div class="home-heading"><h2>Latest Videos</h2><a href="#videos" class="video-top-link">View all</a></div>
   <div id="home-video-list"><p class="muted">Loading latest videos…</p></div>
@@ -217,7 +196,7 @@ function adminView() {
  <button class="button outline" id="backToAccount">Back to Account</button>
  ${list || '<p class="muted">No pending membership requests.</p>'}`;
 }
-const views = {home, news:churchNews, prayer, serve, more, notifications, videos, account:accountPage};
+const views = {home, prayer, serve, more, notifications, videos, account:accountPage};
 function navigate(next) {
  section = views[next]?next:"home";render();
 }
@@ -230,8 +209,7 @@ function render(){
  unmountDailyVerse();
  unmountFacebookPosts();
  screen.innerHTML=views[section]();
- if(section==="home"){ mountHomeUpdates(screen,user,profile);mountDailyVerse();mountFacebookPosts("home");mountVideos(false); }
- if(section==="news") mountFacebookPosts("news");
+ if(section==="home"){ mountHomeUpdates(screen,user,profile);mountDailyVerse();mountFacebookPosts();mountVideos(false); }
  if(section==="videos") mountVideos(true);
  if(section==="notifications") mountNotifications(screen.querySelector("#notifications-root"),user,profile);
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
