@@ -27,6 +27,17 @@ const signedInMessage = () => !user ? "Sign in to view private member informatio
 const info = (title, body) => `<article class="card"><strong class="itemtitle">${escapeHTML(title)}</strong><p>${escapeHTML(body)}</p></article>`;
 const badge = (text) => `<span class="pill">${escapeHTML(text)}</span>`;
 
+function givingCard(compact=false){
+ const href="https://giv.li/amnptg";
+ return compact
+  ? `<a class="giving-home-link" href="${href}" target="_blank" rel="noopener noreferrer" aria-label="Give securely through Givelify"><span>Support Our Church</span><strong>Give Online <span aria-hidden="true">↗</span></strong></a>`
+  : `<section class="card giving-card" aria-label="Online giving">
+   <h2>Giving</h2>
+   <p>Support the ministry of Providence Missionary Baptist Church through Givelify.</p>
+   <a class="button giving-button" href="${href}" target="_blank" rel="noopener noreferrer">Give Online <span aria-hidden="true">↗</span></a>
+   <p class="section-note">Givelify opens separately. PMBC does not collect or store your payment information.</p>
+  </section>`;
+}
 function churchInfo(){
  return `<section class="card church-info" aria-label="Church information">
    <h2>Providence Missionary Baptist Church</h2>
@@ -45,6 +56,7 @@ function home() {
    <h1>Welcome</h1>
    <p>Worship. Pray. Connect. Serve.</p>
  </section>
+ ${givingCard(true)}
  <div id="updates-notice" class="notice" hidden></div>
  <section class="home-updates" aria-label="Church updates">
    <div class="home-heading"><h2>Announcements</h2>
@@ -125,6 +137,7 @@ function more() {
  return `<span class="eyebrow">Church community</span><h1>More</h1>
  ${accountError ? `<p role="alert" class="error">${escapeHTML(accountError)}</p>` : ""}
  ${user ? (review && isAdmin()? adminView() : account()) : form()}
+ ${givingCard()}
  ${churchInfo()}`;
 }
 function adminView() {
