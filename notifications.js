@@ -1,6 +1,7 @@
 // PMBC Notifications — in-app inbox and administrator notices.
 // Device push delivery and scheduled reminder jobs require a trusted backend.
 import { db } from "./firebase.js";
+import { enablePush,pushSupport } from "./push-client.js";
 import {
  collection,doc,addDoc,setDoc,onSnapshot,serverTimestamp,updateDoc,query,where
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
@@ -59,7 +60,7 @@ async function submit(event){
    title,body,audience,kind,linkTab,active:true,createdBy:uid,createdAt:serverTimestamp()
   });
   f.reset();f.closest("details").open=false;
-  setMessage("Notification published to the in-app inbox. This does not send a device push alert.");
+  setMessage("Notification published to the inbox. Enabled devices receive push after backend deployment.");
  }catch(e){setMessage("Could not publish notification ("+(e.code||"error")+"). Publish the updated Firebase rules.",true);}
  finally{waiting=false;if(btn.isConnected)btn.disabled=false;}
 }
@@ -82,7 +83,26 @@ async function remove(id){
  }catch(e){setMessage("Could not remove notification ("+(e.code||"error")+").",true);}
  finally{waiting=false;}
 }
+async function registerDevice(){
+ const btn=root?.querySelector("#enablePush");
+ if(!btn||waiting||!approved)return;
+ waiting=true;btn.disabled=true;
+ try{setMessage(await enablePush(uid));}
+ catch(e){setMessage(e.message||"Unable to register for phone alerts.",true);}
+ finally{waiting=false;if(btn.isConnected)btn.disabled=false;}
+}
+function checkPushSupport(){
+ const current=seq;
+ pushSupport().then(result=>{
+  if(current!==seq||!root)return;
+  const status=root.querySelector("#pushSetupStatus");
+  if(status)status.textContent=result.reason;
+  const btn=root.querySelector("#enablePush");
+  if(btn)btn.disabled=!result.ready;
+ }).catch(()=>{});
+}
 function click(event){
+ if(event.target.closest("#enablePush")){registerDevice();return;}
  const read=event.target.closest("[data-mark-read]");
  if(read){markRead(read.dataset.markRead);return;}
  const removeBtn=event.target.closest("[data-notification-remove]");
@@ -123,11 +143,16 @@ export function mountNotifications(container,user,profile){
    '<option value="prayer">Prayer</option><option value="serve">Serve</option>'+
    '<option value="more">More</option></select></label>'+
    '<button class="button" type="submit">Publish to inbox</button>'+
-   '<p class="section-note">This creates an in-app notice. Push alerts and timed reminders will require backend setup.</p>'+
+   '<p class="section-note">Publishes to the inbox; also sends device alerts once Firebase Cloud Functions are deployed.</p>'+
    '</form></details>':"")+
+  '<section class="card push-permission"><h2>Phone Alerts</h2>'+
+  '<p id="pushSetupStatus" class="section-note">Checking push support…</p>'+
+  '<button class="button outline" type="button" id="enablePush" disabled>Enable Phone Alerts</button>'+
+  '<p class="section-note">On iPhone: open PMBC from its Home Screen icon to allow notifications. This is optional.</p></section>'+
   '<h2>Inbox</h2><div id="notification-items" aria-live="polite"><p class="muted">Loading…</p></div>'+
-  '<p class="section-note">Device push alerts and automatic scheduled reminders are not enabled yet.</p>';
+  '<p class="section-note">Automatic event, prayer, and Serve reminders are not scheduled yet.</p>';
  root.addEventListener("click",click);
+ checkPushSupport();
  root.querySelector("#notificationForm")?.addEventListener("submit",submit);
  const token=seq;
  const jobs=admin?[["all",collection(db,"notifications")]]:
