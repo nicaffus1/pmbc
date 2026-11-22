@@ -71,21 +71,23 @@ service cloud.firestore {
         && data.linkTab in ['','home','prayer','serve','more']
         && data.active is bool;
       }
+      // Server-generated individual notices use audience='person' and a
+      // recipientId. Client users cannot create these via Firestore.
       allow get, list: if isAdmin() ||
-        (approvedMember() && resource.data.audience == 'members');
+        (approvedMember() && resource.data.audience == 'members') ||
+        (approvedMember() && resource.data.audience == 'person'
+          && resource.data.recipientId == request.auth.uid);
       allow create: if isAdmin()
         && validNotice(request.resource.data)
         && request.resource.data.active == true
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt == request.time;
       allow update: if isAdmin()
-        && validNotice(request.resource.data)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['active']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['active'])
+        && request.resource.data.active is bool;
       allow delete: if false;
     }
 
-    // Each approved member may register only their own FCM device token.
-    // Raw tokens are never readable by other members or admins through client SDK.
     match /users/{userId}/pushTokens/{tokenId} {
       function validToken(data) {
         return data.keys().hasOnly(['token','enabled','platform','updatedAt'])
@@ -108,6 +110,8 @@ service cloud.firestore {
       allow create: if approvedMember() && request.auth.uid == userId
         && exists(/databases/$(database)/documents/notifications/$(notificationId))
         && (get(/databases/$(database)/documents/notifications/$(notificationId)).data.audience == 'members'
+            || (get(/databases/$(database)/documents/notifications/$(notificationId)).data.audience == 'person'
+                && get(/databases/$(database)/documents/notifications/$(notificationId)).data.recipientId == userId)
             || isAdmin())
         && request.resource.data.keys().hasOnly(['readAt'])
         && request.resource.data.keys().hasAll(['readAt'])
