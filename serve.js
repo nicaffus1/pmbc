@@ -470,6 +470,89 @@ async function toggleShift(button){
 }
 
 
+
+async function addRecurring(event){
+ event.preventDefault();
+ if(!admin())return;
+ const form=event.target;
+ const mid=form.dataset.mid,pid=form.dataset.pid;
+ const title=form.elements.namedItem("title").value.trim();
+ const weekday=Number(form.elements.namedItem("weekday").value);
+ const startTime=form.elements.namedItem("start").value;
+ const endTime=form.elements.namedItem("end").value;
+ const notes=form.elements.namedItem("notes").value.trim();
+ const rosterVisibility=form.elements.namedItem("rosterVisibility").value;
+ if(!positions.get(mid)?.get(pid)?.active||title.length<2||title.length>80
+    ||weekday<0||weekday>6||!startTime||!endTime||endTime<=startTime||notes.length>300)return notice("Check the weekly schedule details and times.",true);
+ const btn=form.querySelector("[type=submit]");btn.disabled=true;
+ try{
+  await addDoc(collection(db,"ministries",mid,"positions",pid,"recurring"),{
+   title,weekday,startTime,endTime,notes,rosterVisibility,active:true,
+   createdBy:account.uid,createdAt:serverTimestamp()
+  });
+  form.reset();notice("Weekly schedule created. PMBC now displays its next five dates.");
+ }catch(error){notice("Couldn't add weekly schedule ("+(error.code||"error")+"). Publish the latest rules.",true);}
+ finally{if(btn.isConnected)btn.disabled=false;}
+}
+async function toggleRecurring(button){
+ if(!approved())return;
+ const {mid,pid,rid,date}=button.dataset;
+ const schedule=recurring.get(positionKey(mid,pid))?.get(rid);
+ if(!schedule?.active||!positions.get(mid)?.get(pid)?.active)return;
+ const key=recurringKey(mid,pid,rid)+"/"+date,lock="rec:"+key;
+ if(pendingWrites.has(lock))return;
+ const wasSigned=recurringJoined.get(key)===true;
+ pendingWrites.add(lock);draw();
+ const ref=doc(db,"ministries",mid,"positions",pid,"recurring",rid,"dates",date,"members",account.uid);
+ try{
+  if(wasSigned)await deleteDoc(ref);
+  else await setDoc(ref,{
+   memberId:account.uid,memberName:profile.displayName,occurrenceDate:date,createdAt:serverTimestamp()
+  });
+  recurringJoined.set(key,!wasSigned);notice(wasSigned?"Weekly shift canceled.":"You're signed up for this date.");
+ }catch(error){notice("Couldn't update weekly sign-up ("+(error.code||"error")+").",true);}
+ finally{pendingWrites.delete(lock);draw();}
+}
+async function signForWeeks(button){
+ if(!approved())return;
+ const {mid,pid,rid}=button.dataset;
+ const count=Number(button.dataset.count);
+ if(![4,13].includes(count))return;
+ const schedule=recurring.get(positionKey(mid,pid))?.get(rid);
+ if(!schedule?.active||!positions.get(mid)?.get(pid)?.active)return;
+ const lock="bulk:"+recurringKey(mid,pid,rid);
+ if(pendingWrites.has(lock))return;
+ if(!window.confirm("Sign up for the next "+count+" "+weekdayNames[schedule.weekday]+"s? You can cancel dates individually."))return;
+ pendingWrites.add(lock);button.disabled=true;
+ try{
+  const dates=datesForSchedule(schedule,count);
+  const pending=[];
+  for(const date of dates){
+   const ref=doc(db,"ministries",mid,"positions",pid,"recurring",rid,"dates",date,"members",account.uid);
+   const snapshot=await getDoc(ref);
+   if(!snapshot.exists())pending.push({date,ref});
+  }
+  if(pending.length){
+   const batch=writeBatch(db);
+   for(const {date,ref} of pending)batch.set(ref,{
+    memberId:account.uid,memberName:profile.displayName,occurrenceDate:date,createdAt:serverTimestamp()
+   });
+   await batch.commit();
+  }
+  notice("Signed up for "+pending.length+" additional dates. Already-saved dates were kept.");
+ }catch(error){notice("Couldn't complete multiweek signup ("+(error.code||"error")+"). Nothing was partially added in the final batch.",true);}
+ finally{pendingWrites.delete(lock);if(button.isConnected)button.disabled=false;}
+}
+async function archiveRecurring(button){
+ if(!admin())return;
+ const {mid,pid,rid}=button.dataset;
+ if(!window.confirm("Stop this weekly schedule? Past volunteer signups will remain in Firebase."))return;
+ try{
+  await updateDoc(doc(db,"ministries",mid,"positions",pid,"recurring",rid),{active:false});
+  notice("Weekly schedule stopped. Prior signups remain saved.");
+ }catch(error){notice("Couldn't stop weekly schedule ("+(error.code||"error")+").",true);}
+}
+
 async function setPositionActive(mid,pid,active){
  if(!admin()||!positions.get(mid)?.has(pid))return;
  const name=positions.get(mid).get(pid).title;
@@ -512,12 +595,19 @@ function onClick(event){
  const archiveButton=event.target.closest("[data-position-archive]");
  if(archiveButton){archivePosition(archiveButton);return;}
  const restoreButton=event.target.closest("[data-position-restore]");
- if(restoreButton)restorePosition(restoreButton);
+ if(restoreButton){restorePosition(restoreButton);return;}
+ const recurringButton=event.target.closest("[data-recurring-signup]");
+ if(recurringButton){toggleRecurring(recurringButton);return;}
+ const multi=event.target.closest("[data-recurring-bulk]");
+ if(multi){signForWeeks(multi);return;}
+ const archive=event.target.closest("[data-recurring-archive]");
+ if(archive)archiveRecurring(archive);
 }
 function onSubmit(event){
  if(event.target.matches("#ministryForm")){addMinistry(event);return;}
  if(event.target.matches("[data-position-form]")){addPosition(event);return;}
- if(event.target.matches("[data-shift-form]"))addShift(event);
+ if(event.target.matches("[data-shift-form]")){addShift(event);return;}
+ if(event.target.matches("[data-recurring-form]"))addRecurring(event);
 }
 export function unmountServe(){
  sequence++;
