@@ -293,11 +293,19 @@ function ministryUI(entry){
 }
 function draw(){
  const area=root?.querySelector("#ministriesList");if(!area)return;
- // Snapshot updates must not collapse an administrator's open form.
+ // Preserve expanded sections and unsaved form edits across live Firestore updates.
+ const formDrafts=new Map();
  for(const panel of area.querySelectorAll("details[data-panel]")){
    const id=panel.dataset.panel;
    if(panel.open)expandedPanels.add(id);
    else expandedPanels.delete(id);
+   if(!panel.open||!id)continue;
+   const form=panel.querySelector(":scope > .edit-form");
+   if(form){
+     formDrafts.set(id,Object.fromEntries(
+       [...form.querySelectorAll("[name]")].map(control=>[control.name,control.value])
+     ));
+   }
  }
  const entries=[...ministries.values()].filter(m=>m.active)
    .sort((a,b)=>a.name.localeCompare(b.name));
@@ -319,7 +327,16 @@ function draw(){
    '<div class="notice">No active ministries. An administrator can create or restore one.</div>')+
    (admin()?archivedMinistriesUI():"");
  for(const panel of area.querySelectorAll("details[data-panel]")){
-   panel.open=expandedPanels.has(panel.dataset.panel);
+   const id=panel.dataset.panel;
+   panel.open=expandedPanels.has(id);
+   const draft=formDrafts.get(id);
+   if(draft){
+     const form=panel.querySelector(":scope > .edit-form");
+     for(const [name,value] of Object.entries(draft)){
+       const control=form?.elements.namedItem(name);
+       if(control)control.value=value;
+     }
+   }
  }
 }
 function watchPositions(mid,token){
@@ -423,6 +440,7 @@ async function editPosition(event){
  try{
    await updateDoc(doc(db,"ministries",mid,"positions",pid),changes);
    positions.get(mid).set(pid,{...existing,...changes});
+   expandedPanels.delete("edit-position:"+mid+":"+pid);
    draw();
    notice("Volunteer position updated.");
  }catch(error){
@@ -452,6 +470,7 @@ async function editShift(event){
  try{
    await updateDoc(doc(db,"ministries",mid,"positions",pid,"shifts",sid),changes);
    shifts.get(positionKey(mid,pid)).set(sid,{...existing,...changes});
+   expandedPanels.delete("edit-shift:"+mid+":"+pid+":"+sid);
    draw();
    notice("Shift updated. Existing volunteer sign-ups were preserved.");
  }catch(error){
