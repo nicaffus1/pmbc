@@ -11,11 +11,13 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({
 
 let root=null, account=null, profile=null, sequence=0;
 let stops=[], ministries=new Map(), positions=new Map(), joined=new Map();
-let knownPositionListeners=new Set(), pendingWrites=new Set();
+let shifts=new Map(), shiftJoined=new Map();
+let knownPositionListeners=new Set(), knownShiftListeners=new Set(), pendingWrites=new Set();
 
 const approved=()=>!!account && profile?.status==="approved";
 const admin=()=>approved() && profile?.role==="admin";
 const positionKey=(mid,pid)=>mid+"/"+pid;
+const shiftKey=(mid,pid,sid)=>mid+"/"+pid+"/"+sid;
 
 function notice(message,isError=false){
  const el=root?.querySelector("#serveMessage");
@@ -35,8 +37,9 @@ function positionUI(mid,entry){
  return `<div class="position-item">
   <strong>${esc(data.title)}</strong>
   ${data.description?`<p>${esc(data.description)}</p>`:""}
-  <p class="section-note">Ongoing ministry interest · No shift assigned yet</p>
+  <p class="section-note">Ongoing ministry interest</p>
   ${volunteerUI(mid,id)}
+  ${shiftList(mid,id)}
  </div>`;
 }
 function ministryUI(entry){
@@ -87,7 +90,7 @@ function watchPositions(mid,token){
    if(sequence!==token)return;
    const records=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
    positions.set(mid,records);
-   for(const p of records.values())if(p.active)watchSignup(mid,p.id,token);
+   for(const p of records.values())if(p.active){watchSignup(mid,p.id,token);watchShifts(mid,p.id,token);}
    draw();
  },err=>{
    if(sequence!==token)return;
@@ -152,17 +155,21 @@ async function toggleSignup(button){
 }
 function onClick(event){
  const button=event.target.closest("[data-toggle-signup]");
- if(button)toggleSignup(button);
+ if(button){toggleSignup(button);return;}
+ const shiftButton=event.target.closest("[data-toggle-shift]");
+ if(shiftButton)toggleShift(shiftButton);
 }
 function onSubmit(event){
  if(event.target.matches("#ministryForm")){addMinistry(event);return;}
- if(event.target.matches("[data-position-form]"))addPosition(event);
+ if(event.target.matches("[data-position-form]")){addPosition(event);return;}
+ if(event.target.matches("[data-shift-form]"))addShift(event);
 }
 export function unmountServe(){
  sequence++;
  for(const unsub of stops){try{unsub();}catch{}}
  stops=[];ministries=new Map();positions=new Map();joined=new Map();
- knownPositionListeners=new Set();pendingWrites=new Set();
+ shifts=new Map();shiftJoined=new Map();
+ knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();
  root=null;account=null;profile=null;
 }
 export function mountServe(container,user,userProfile){
@@ -174,7 +181,7 @@ export function mountServe(container,user,userProfile){
    return;
  }
  root.innerHTML=`<span class="eyebrow">Get involved</span><h1>Serve</h1>
- <p class="muted">Find a ministry, and let the church know you'd like to help.</p>
+ <p class="muted">Find a ministry and sign up for a scheduled shift.</p>
  <div id="serveMessage" hidden></div>
  ${admin()?`<section class="card" id="ministryComposer">
   <h2>Create a Ministry</h2>
