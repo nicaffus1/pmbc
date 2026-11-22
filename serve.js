@@ -155,10 +155,7 @@ function ministryUI(entry){
  const {id,...data}=entry;
  const items=[...(positions.get(id)?.values()||[])].filter(p=>p.active)
    .sort((a,b)=>a.title.localeCompare(b.title));
- return `<article class="card ministry-item">
-  <h2>${esc(data.name)}</h2>
-  ${data.description?`<p>${esc(data.description)}</p>`:""}
-  <h3 class="ministry-subtitle">Ways to Serve</h3>
+ return `<article class="card ministry-item compact-ministry">
   ${items.length?items.map(p=>positionUI(id,p)).join(""):'<p class="muted">No volunteer positions yet.</p>'}
   ${admin()?`<details class="admin-expander" data-panel="position:${esc(id)}"><summary>Add a Volunteer Position</summary>
   <form class="stack position-form" data-position-form data-mid="${esc(id)}">
