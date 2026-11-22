@@ -44,7 +44,7 @@ test("administrator can create a ministry on a phone, view it and reload",async(
   await page.locator("#addMinistryButton").click();
   await expect(page.locator("#serveMessage")).toContainText("Ministry saved",{timeout:15000});
   await expect(page.locator("#ministryPicker")).toHaveValue(/.+/);
-  await expect(page.getByText("Children's Church")).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Children's Church"})).toBeVisible();
   await page.reload();
   await expect(page.locator("#ministryPicker")).toContainText("Children's Church");
   expect(pageErrors).toEqual([]);
