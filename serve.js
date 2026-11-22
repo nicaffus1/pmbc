@@ -75,6 +75,12 @@ function shiftList(mid,pid){
       <label>End time<input class="field" name="end" type="time" required></label>
     </div>
     <label>Notes (optional)<input class="field" name="notes" maxlength="300"></label>
+    <label>Who can see volunteer names?
+      <select class="field" name="rosterVisibility">
+        <option value="members">Approved members</option>
+        <option value="admins">Administrators only</option>
+      </select>
+    </label>
     <p class="section-note">Times are Central Time. Each shift starts and ends on the same day.</p>
     <button class="button outline" type="submit">Save Shift</button>
   </form></details>`:""}
@@ -276,6 +282,7 @@ async function addShift(event){
  try{
    await addDoc(collection(db,"ministries",mid,"positions",pid,"shifts"),{
      startsAt,endsAt,timeZone:"America/Chicago",notes,active:true,
+     rosterVisibility:form.elements.namedItem("rosterVisibility").value,
      createdBy:account.uid,createdAt:serverTimestamp()
    });
    form.reset();notice("Scheduled shift added.");
