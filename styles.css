@@ -396,3 +396,16 @@
 .facebook-updates-copy>span{color:#667c91;font-size:12px;line-height:1.4}
 .facebook-updates-arrow{font-size:19px;color:#3179af}
 .facebook-updates-link:focus-visible{outline:3px solid #00acb7;outline-offset:3px}
+
+/* PMBC v51: native Facebook update cards (not a blocked Facebook iframe). */
+#facebook-post-list{display:grid;gap:12px;margin-top:12px}
+.facebook-post-card{border:1px solid #dfe8ef;border-radius:13px;background:#fff;padding:14px;overflow:hidden}
+.facebook-post-meta{display:flex;flex-direction:column;gap:3px}
+.facebook-post-meta strong{font-size:12px;color:#173f60}
+.facebook-post-meta time{font-size:11px;color:#6f8191}
+.facebook-post-card p{font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;margin:12px 0}
+.facebook-post-card>a{display:inline-block;margin-top:11px;color:#0a687d;font-size:12px;font-weight:750;text-decoration:none}
+.facebook-post-photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:9px}
+.facebook-post-photos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:7px;background:#e9f0f5}
+.facebook-post-photos img:only-child{grid-column:1/-1;max-height:360px;aspect-ratio:16/10}
+.facebook-post-card>a:focus-visible{outline:3px solid #00acb7;outline-offset:3px}
