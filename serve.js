@@ -1,7 +1,7 @@
 // PMBC Serve — ministry positions and member opt-in, backed by Firestore.
 import { db } from "./firebase.js";
 import {
-  collection, doc, addDoc, setDoc, deleteDoc,
+  collection, doc, addDoc, setDoc, deleteDoc, updateDoc,
   onSnapshot, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
@@ -11,7 +11,7 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({
 
 let root=null, account=null, profile=null, sequence=0;
 let stops=[], ministries=new Map(), positions=new Map(), joined=new Map();
-let shifts=new Map(), shiftJoined=new Map();
+let shifts=new Map(), shiftJoined=new Map(), shiftRosters=new Map();
 let knownPositionListeners=new Set(), knownShiftListeners=new Set(), pendingWrites=new Set();
 
 const approved=()=>!!account && profile?.status==="approved";
@@ -54,9 +54,21 @@ function shiftList(mid,pid){
  const rows=list.map(x=>{
   const key=shiftKey(mid,pid,x.id), signed=shiftJoined.get(key)===true;
   const past=x.endsAt<chicagoNow();
+  const visibility=x.rosterVisibility||"members";
+  const canViewRoster=admin()||visibility==="members";
+  const roster=shiftRosters.get(key);
+  const rosterNames=roster?.map(v=>"<li>"+esc(v.memberName||"Church Member")+"</li>").join("")||"";
   return `<div class="shift-entry">
     <strong>${showShiftTime(x.startsAt)} to ${showShiftTime(x.endsAt).split(" · ").pop()} CT</strong>
     ${x.notes?`<p>${esc(x.notes)}</p>`:""}
+    ${canViewRoster?`<div class="shift-roster"><strong>Volunteers (${roster?.length??"…" })</strong>
+     ${roster===undefined?'<p class="muted">Loading volunteers…</p>':roster.length?`<ul>${rosterNames}</ul>`:'<p class="muted">No one has signed up yet.</p>'}
+     </div>`:'<p class="section-note">Volunteer names visible to administrators only.</p>'}
+    ${admin()?`<label class="roster-setting">Who can see volunteer names?
+     <select class="field" data-roster-visibility data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}">
+      <option value="members" ${visibility==="members"?"selected":""}>All approved members</option>
+      <option value="admins" ${visibility==="admins"?"selected":""}>Administrators only</option>
+     </select></label>`:""}
     <button class="button ${signed?"outline":""}" type="button" data-toggle-shift
       data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}"
       ${pendingWrites.has("shift:"+key)||(!signed&&past)?"disabled":""}>
@@ -73,6 +85,11 @@ function shiftList(mid,pid){
       <label>End time<input class="field" name="end" type="time" required></label>
     </div>
     <label>Notes (optional)<input class="field" name="notes" maxlength="300"></label>
+    <label>Who can see volunteer names?
+     <select class="field" name="rosterVisibility">
+      <option value="members">All approved members</option>
+      <option value="admins">Administrators only</option>
+     </select></label>
     <p class="section-note">Times are Central Time. Each shift starts and ends on the same day.</p>
     <button class="button outline" type="submit">Add Shift</button>
   </form>`:""}
@@ -97,7 +114,7 @@ function watchShifts(mid,pid,token){
    if(token!==sequence)return;
    shifts.set(key,new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}])));
    for(const item of shifts.get(key).values()){
-     if(item.active)watchShiftSignup(mid,pid,item.id,token);
+     if(item.active){watchShiftSignup(mid,pid,item.id,token);watchRoster(mid,pid,item,token);}
    }
    draw();
  },error=>{
@@ -113,6 +130,8 @@ function positionUI(mid,entry){
   <p class="section-note">Ongoing ministry interest</p>
   ${volunteerUI(mid,id)}
   ${shiftList(mid,id)}
+  ${admin()?`<button type="button" class="button outline position-archive"
+   data-position-archive data-mid="${esc(mid)}" data-pid="${esc(id)}">Remove Position</button>`:""}
  </div>`;
 }
 function ministryUI(entry){
@@ -124,6 +143,7 @@ function ministryUI(entry){
   ${data.description?`<p>${esc(data.description)}</p>`:""}
   <h3 class="ministry-subtitle">Ways to Serve</h3>
   ${items.length?items.map(p=>positionUI(id,p)).join(""):'<p class="muted">No volunteer positions yet.</p>'}
+  ${admin()?archivedPositionsUI(id):""}
   ${admin()?`<form class="stack position-form" data-position-form data-mid="${esc(id)}">
    <label>New volunteer position
     <input class="field" name="title" minlength="2" maxlength="80" required
@@ -247,6 +267,7 @@ async function addShift(event){
  try{
    await addDoc(collection(db,"ministries",mid,"positions",pid,"shifts"),{
      startsAt,endsAt,timeZone:"America/Chicago",notes,active:true,
+     rosterVisibility:form.elements.namedItem("rosterVisibility").value,
      createdBy:account.uid,createdAt:serverTimestamp()
    });
    form.reset();notice("Scheduled shift added.");
@@ -283,7 +304,11 @@ function onClick(event){
  const button=event.target.closest("[data-toggle-signup]");
  if(button){toggleSignup(button);return;}
  const shiftButton=event.target.closest("[data-toggle-shift]");
- if(shiftButton)toggleShift(shiftButton);
+ if(shiftButton){toggleShift(shiftButton);return;}
+ const archiveButton=event.target.closest("[data-position-archive]");
+ if(archiveButton){archivePosition(archiveButton);return;}
+ const restoreButton=event.target.closest("[data-position-restore]");
+ if(restoreButton)restorePosition(restoreButton);
 }
 function onSubmit(event){
  if(event.target.matches("#ministryForm")){addMinistry(event);return;}
@@ -294,7 +319,7 @@ export function unmountServe(){
  sequence++;
  for(const unsub of stops){try{unsub();}catch{}}
  stops=[];ministries=new Map();positions=new Map();joined=new Map();
- shifts=new Map();shiftJoined=new Map();
+ shifts=new Map();shiftJoined=new Map();shiftRosters=new Map();
  knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();
  root=null;account=null;profile=null;
 }
@@ -323,6 +348,7 @@ export function mountServe(container,user,userProfile){
  <div id="ministriesList" aria-live="polite"><p class="muted">Loading ministries…</p></div>`;
  root.addEventListener("submit",onSubmit);
  root.addEventListener("click",onClick);
+ root.addEventListener("change",onChange);
  const token=sequence;
  stops.push(onSnapshot(collection(db,"ministries"),snap=>{
    if(token!==sequence)return;
