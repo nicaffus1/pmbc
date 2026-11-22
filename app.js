@@ -6,6 +6,7 @@ import { mountHomeUpdates, unmountHomeUpdates } from "./home-updates.js";
 import { mountNotifications, unmountNotifications } from "./notifications.js";
 import { mountVideos, unmountVideos } from "./videos.js";
 import { mountDailyVerse, unmountDailyVerse } from "./verse-of-day.js";
+import { mountFacebookPosts, unmountFacebookPosts } from "./facebook-posts.js";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification
@@ -95,13 +96,11 @@ function churchInfo(){
 }
 function facebookUpdates(){
  const page="https://www.facebook.com/providencembccenter/";
- return `<section class="home-facebook-section" aria-label="Facebook church updates">
-  <div class="home-heading"><h2>Church Updates</h2></div>
-  <a class="facebook-updates-link" href="${page}" target="_blank" rel="noopener noreferrer">
-   <span class="facebook-updates-icon" aria-hidden="true">f</span>
-   <span class="facebook-updates-copy"><strong>See our latest Facebook posts</strong><span>News, photos, and updates from Providence</span></span>
-   <span class="facebook-updates-arrow" aria-hidden="true">↗</span>
-  </a>
+ return `<section class="home-facebook-section" aria-label="Church updates from Facebook">
+  <div class="home-heading"><h2>Church Updates</h2>
+  <a class="facebook-page-link" href="${page}" target="_blank" rel="noopener noreferrer">Facebook ↗</a></div>
+  <p class="facebook-feed-intro">Shared from our church's Facebook Page.</p>
+  <div id="facebook-post-list" aria-live="polite"><p class="muted">Loading church updates…</p></div>
  </section>`;
 }
 function home() {
@@ -208,8 +207,9 @@ function render(){
  unmountNotifications();
  unmountVideos();
  unmountDailyVerse();
+ unmountFacebookPosts();
  screen.innerHTML=views[section]();
- if(section==="home"){ mountHomeUpdates(screen,user,profile);mountDailyVerse();mountVideos(false); }
+ if(section==="home"){ mountHomeUpdates(screen,user,profile);mountDailyVerse();mountFacebookPosts();mountVideos(false); }
  if(section==="videos") mountVideos(true);
  if(section==="notifications") mountNotifications(screen.querySelector("#notifications-root"),user,profile);
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
