@@ -23,6 +23,14 @@ let loaded = new Set();
 let selectedPrayerId = "";
 let prayerTotals = new Map();
 let totalListeners = new Map();
+let ownPrayerListeners = new Map();
+let prayerRefreshTimer = null;
+const PRAYER_COOLDOWN_MS = 60 * 60 * 1000;
+function cooldownRemaining(id){
+ const last=prayed.get(id);
+ const millis=last?.toMillis?.();
+ return millis===undefined?0:Math.max(0,millis+PRAYER_COOLDOWN_MS-Date.now());
+}
 
 function canSeePrivate(){return currentUser && currentProfile?.status === "approved";}
 function isAdmin(){return canSeePrivate() && currentProfile.role === "admin";}
@@ -40,11 +48,6 @@ function baseScreen(){
  return `<span class="eyebrow">PMBC Community</span><h1>Prayer List</h1>
  <p class="muted">Choose someone to pray for, or tap the check beside their name when you've prayed.</p>
  <div id="prayerNotice" class="notice" hidden></div>
- <section aria-label="Church prayer list">
-   <h2>Church Prayer List</h2>
-   <div id="prayerList" aria-live="polite"><p class="muted">Loading requests…</p></div>
- </section>
- <section id="prayerDetail" aria-live="polite"></section>
  <details class="card prayer-composer" id="prayerComposer">
    <summary>+ Submit a Prayer Request</summary>
    <form id="prayerForm" class="stack">
@@ -73,7 +76,12 @@ function baseScreen(){
        <button class="button outline" id="cancelPrayerEdit" type="button" hidden>Cancel Editing</button>
      </div>
    </form>
- </details>`;
+ </details>
+ <section aria-label="Church prayer list">
+   <h2>Church Prayer List</h2>
+   <div id="prayerList" aria-live="polite"><p class="muted">Loading requests…</p></div>
+ </section>
+ <section id="prayerDetail" aria-live="polite"></section>`;
 }
 function activeRequests(){
  return [...requestsById.entries()]
@@ -104,7 +112,7 @@ function drawList(){
  list.innerHTML=visible.map(([id,p])=>{
    const mine=p.authorId===currentUser.uid;
    const canViewTotal=mine||isAdmin();
-   const hasPrayed=prayed.get(id)===true;
+   const waiting=cooldownRemaining(id)>0;
    const total=prayerTotals.get(id);
    return `<div class="prayer-list-row ${id===selectedPrayerId?"selected":""}">
      <button class="prayer-person" type="button" data-select-prayer="${esc(id)}"
@@ -114,10 +122,10 @@ function drawList(){
        ${canViewTotal&&total!==undefined?`<span class="prayer-count">${total} prayers</span>`:""}
        <span class="prayer-person-arrow" aria-hidden="true">›</span>
      </button>
-     <button class="prayer-check ${hasPrayed?"prayed":""}" type="button" data-prayed="${esc(id)}"
-       aria-label="${hasPrayed?"Record another prayer for":"I prayed for"} ${esc(prayerName(p))}"
-       title="${hasPrayed?"Tap to record another prayer":"Tap to mark that you prayed"}"
-       ${busy?"disabled":""}>${hasPrayed?"✓":"○"}</button>
+     <button class="prayer-check ${waiting?"prayed":""}" type="button" data-prayed="${esc(id)}"
+       aria-label="${waiting?"Prayer recorded; available again in one hour for":"I prayed for"} ${esc(prayerName(p))}"
+       title="${waiting?"Already recorded; available again one hour after your last prayer":"Tap to record a prayer"}"
+       ${busy||waiting?"disabled":""}>${waiting?"✓":"○"}</button>
    </div>`;
  }).join("");
  if(!selectedPrayerId){
@@ -139,16 +147,26 @@ function drawList(){
 }
 function syncPrayed(){
  const active=new Set(requestsById.keys());
- for(const key of [...prayed.keys()]) if(!active.has(key)) prayed.delete(key);
- for(const key of active){
-   if(prayed.has(key))continue;
-   prayed.set(key,false);
+ for(const [id,stop] of ownPrayerListeners){
+   if(active.has(id))continue;
+   try{stop();}catch{}
+   ownPrayerListeners.delete(id);
+   prayed.delete(id);
+ }
+ for(const id of active){
+   if(ownPrayerListeners.has(id))continue;
    const marker=session;
-   // Each member may read their own acknowledgement, but never other voters.
-   getDoc(doc(db,"prayers",key,"prayedBy",currentUser.uid)).then(s=>{
-     if(marker!==session||!currentRoot)return;
-     prayed.set(key,s.exists());drawList();
-   }).catch(()=>{});
+   // Only the current member's own timestamp is fetched, never anybody else's.
+   const stop=onSnapshot(doc(db,"prayers",id,"prayedBy",currentUser.uid),snap=>{
+     if(marker!==session)return;
+     const timestamp=snap.exists()?(snap.data().lastPrayedAt||snap.data().createdAt):null;
+     prayed.set(id,timestamp||null);
+     drawList();
+   },error=>{
+     if(marker!==session)return;
+     setNotice("Unable to check your prayer status ("+(error.code||"error")+").",true);
+   });
+   ownPrayerListeners.set(id,stop);
  }
 }
 function syncTotals(){
