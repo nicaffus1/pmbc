@@ -237,18 +237,22 @@ function toggleUnspoken(){
  const checked=form.elements.namedItem("unspoken").checked;
  input.disabled=checked;
  input.required=!checked;
+ const details=form.elements.namedItem("text");
+ details.required=!checked;
  if(checked)input.value="";
  input.placeholder=checked?"Unspoken":"Enter a name";
+ details.placeholder=checked?"Details optional for an unspoken request":"How can we pray?";
 }
 async function submitPrayer(e){
  e.preventDefault();
  if(!canSeePrivate()||busy)return;
  const f=e.currentTarget;
- const text=String(f.elements.namedItem("text").value).trim();
+ const suppliedText=String(f.elements.namedItem("text").value).trim();
  const visibility=f.elements.namedItem("visibility").value;
  const status=f.elements.namedItem("status").value;
  const unspoken=f.elements.namedItem("unspoken").checked;
  const subjectName=unspoken?"Unspoken":String(f.elements.namedItem("subjectName").value).trim();
+ const text=unspoken&&!suppliedText?"Unspoken prayer request.":suppliedText;
  if(subjectName.length<2||subjectName.length>80){
    setNotice("Enter a name or check Unspoken.",true);return;
  }
