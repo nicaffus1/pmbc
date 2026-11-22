@@ -15,6 +15,7 @@ let shifts=new Map(), shiftJoined=new Map(), shiftRosters=new Map();
 let rosterSubscriptions=new Map();
 let knownPositionListeners=new Set(), knownShiftListeners=new Set(), pendingWrites=new Set();
 let watchedMinistries=new Set();
+let clockRefresh=null;
 let selectedMinistryId="", expandedPanels=new Set(), selectedPositionByMinistry=new Map();
 
 const approved=()=>!!account && profile?.status==="approved";
@@ -68,7 +69,7 @@ function roundedStart(value){
  return String(Math.floor(nearest/2)).padStart(2,"0")+":"+(nearest%2?"30":"00");
 }
 function shiftList(mid,pid){
- const list=[...(shifts.get(positionKey(mid,pid))?.values()||[])].filter(x=>x.active)
+ const list=[...(shifts.get(positionKey(mid,pid))?.values()||[])].filter(x=>x.active && x.endsAt>chicagoNow())
    .sort((a,b)=>a.startsAt.localeCompare(b.startsAt));
  const rows=list.map(x=>{
   const key=shiftKey(mid,pid,x.id), signed=shiftJoined.get(key)===true;
@@ -633,6 +634,7 @@ export function unmountServe(){
  sequence++;
  for(const unsub of stops){try{unsub();}catch{}}
  for(const unsub of rosterSubscriptions.values()){try{unsub();}catch{}}
+ if(clockRefresh!==null){clearInterval(clockRefresh);clockRefresh=null;}
  rosterSubscriptions=new Map();
  stops=[];ministries=new Map();positions=new Map();
  shifts=new Map();shiftJoined=new Map();shiftRosters=new Map();
@@ -658,6 +660,8 @@ export function mountServe(container,user,userProfile){
  root.addEventListener("submit",onSubmit);
  root.addEventListener("click",onClick);
  root.addEventListener("change",onChange);
+ // Hide completed opportunities even when the page stays open across the end time.
+ clockRefresh=setInterval(()=>draw(),60000);
  const token=sequence;
  stops.push(onSnapshot(collection(db,"ministries"),snap=>{
    if(token!==sequence)return;
