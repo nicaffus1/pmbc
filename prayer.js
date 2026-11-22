@@ -46,7 +46,7 @@ function escapeRequestText(text){return esc(text).replace(/\n/g,"<br>");}
 
 function baseScreen(){
  return `<span class="eyebrow">PMBC Community</span><h1>Prayer List</h1>
- <p class="muted">Choose someone to pray for, or tap the check beside their name when you've prayed.</p>
+ <p class="muted">Tap a name to read the request. Check the circle to record a prayer; it becomes available again after one hour.</p>
  <div id="prayerNotice" class="notice" hidden></div>
  <details class="card prayer-composer" id="prayerComposer">
    <summary>+ Submit a Prayer Request</summary>
@@ -79,6 +79,7 @@ function baseScreen(){
  </details>
  <section aria-label="Church prayer list">
    <h2>Church Prayer List</h2>
+   <p class="prayer-list-guidance">A checkmark means you prayed within the past hour. Your previous prayers stay counted.</p>
    <div id="prayerList" aria-live="polite"><p class="muted">Loading requests…</p></div>
  </section>
  <section id="prayerDetail" aria-live="polite"></section>`;
