@@ -118,3 +118,12 @@
 .position-detail>.position-description{font-size:13px;color:#435c72;margin:2px 0 13px;line-height:1.55}
 .position-detail>.shift-list{border-top:0;margin-top:0;padding-top:5px}
 .position-empty{font-size:13px;margin:5px 0 13px}
+
+/* Position and shift editing stays behind the administrator's Manage controls. */
+.edit-panel{width:100%;margin:1px 0 8px;border:1px solid #e0e9ef;border-radius:10px;background:#fff}
+.edit-panel>summary{padding:10px 12px;color:#0b596c;font-weight:700;font-size:13px;cursor:pointer}
+.edit-panel[open]>summary{border-bottom:1px solid #e3ebf0}
+.edit-panel .edit-form{padding:12px;gap:10px}
+.edit-panel .edit-form label{color:#224b6a;font-size:13px}
+.edit-panel .edit-form>.button{align-self:flex-start}
+.shift-form select.field,.edit-form select.field{font-size:16px;background:#fff}
