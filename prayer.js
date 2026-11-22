@@ -312,24 +312,34 @@ async function submitPrayer(e){
 async function markPrayed(id){
  const request=requestsById.get(id);
  if(busy||request?.status!=="active"||!canSeePrivate())return;
+ if(cooldownRemaining(id)>0){
+   setNotice("You can record another prayer for this request one hour after your last one.");
+   drawList();
+   return;
+ }
  busy=true;
- const previous=Boolean(prayed.get(id));
- prayed.set(id,true);drawList();
+ drawList();
  try{
    const vote=doc(db,"prayers",id,"prayedBy",currentUser.uid);
    const existing=await getDoc(vote);
+   const last=existing.exists()?(existing.data().lastPrayedAt||existing.data().createdAt):null;
+   if(last?.toMillis && last.toMillis()+PRAYER_COOLDOWN_MS>Date.now()){
+     prayed.set(id,last);
+     setNotice("This prayer has already been recorded. The check resets one hour after your last prayer.");
+     return;
+   }
    if(existing.exists()){
-     // Legacy acknowledgements have no count field; treat them as one prayer.
+     // A legacy acknowledgement without a count starts at one.
      const value=Number.isInteger(existing.data().count)?increment(1):2;
      await updateDoc(vote,{count:value,lastPrayedAt:serverTimestamp()});
    }else{
-     await setDoc(vote,{count:1,createdAt:serverTimestamp()});
+     await setDoc(vote,{count:1,createdAt:serverTimestamp(),lastPrayedAt:serverTimestamp()});
    }
-   setNotice("Thank you for praying. Your prayer has been recorded.");
+   setNotice("Prayer recorded. You can pray again in one hour; the total keeps growing.");
  }catch(err){
-   prayed.set(id,previous);
-   setNotice("Couldn't record your prayer ("+(err.code||"network error")+
-     "). Confirm the updated Firestore rules are published.",true);
+   setNotice(err.code==="permission-denied"
+     ?"Prayer couldn't be recorded. You may still be within the one-hour limit, or the updated Firebase rules need publishing."
+     :"Couldn't record your prayer ("+(err.code||"network error")+").",true);
  }finally{busy=false;drawList();}
 }
 function edit(id){
@@ -368,8 +378,10 @@ export function unmountPrayer(){
  session++;
  for(const fn of cleanup){try{fn();}catch{}}
  for(const stop of totalListeners.values()){try{stop();}catch{}}
+ for(const stop of ownPrayerListeners.values()){try{stop();}catch{}}
+ if(prayerRefreshTimer!==null){clearInterval(prayerRefreshTimer);prayerRefreshTimer=null;}
  cleanup=[];requestsById=new Map();prayed=new Map();loaded=new Set();errors=[];
- totalListeners=new Map();prayerTotals=new Map();selectedPrayerId="";
+ totalListeners=new Map();ownPrayerListeners=new Map();prayerTotals=new Map();selectedPrayerId="";
  currentRoot=null;currentUser=null;currentProfile=null;activeEdit=null;busy=false;
 }
 export function mountPrayer(root,user,profile){
@@ -385,5 +397,7 @@ export function mountPrayer(root,user,profile){
  root.querySelector("#prayerForm").addEventListener("submit",submitPrayer);
  root.querySelector("#prayerUnspoken").addEventListener("change",toggleUnspoken);
  root.addEventListener("click",handleClick);
+ // An open page automatically unlocks prayer checks when the hour expires.
+ prayerRefreshTimer=setInterval(()=>{if(currentRoot)drawList();},15000);
  watchFeed();
 }
