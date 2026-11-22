@@ -55,6 +55,48 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // In-app notifications. Only administrators may publish; all approved members
+    // can read member notices, while admin-only notices remain restricted.
+    match /notifications/{notificationId} {
+      function validNotice(data) {
+        return data.keys().hasAll([
+          'title','body','audience','kind','linkTab','active','createdBy','createdAt'
+        ]) && data.keys().hasOnly([
+          'title','body','audience','kind','linkTab','active','createdBy','createdAt'
+        ])
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 100
+        && data.body is string && data.body.size() >= 3 && data.body.size() <= 500
+        && data.audience in ['members','admins']
+        && data.kind in ['general','event','prayer','serve','admin']
+        && data.linkTab in ['','home','prayer','serve','more']
+        && data.active is bool;
+      }
+      allow get, list: if isAdmin() ||
+        (approvedMember() && resource.data.audience == 'members');
+      allow create: if isAdmin()
+        && validNotice(request.resource.data)
+        && request.resource.data.active == true
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin()
+        && validNotice(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['active']);
+      allow delete: if false;
+    }
+
+    match /users/{userId}/notificationReads/{notificationId} {
+      allow get, list: if signedIn() && request.auth.uid == userId
+        && approvedMember();
+      allow create: if approvedMember() && request.auth.uid == userId
+        && exists(/databases/$(database)/documents/notifications/$(notificationId))
+        && (get(/databases/$(database)/documents/notifications/$(notificationId)).data.audience == 'members'
+            || isAdmin())
+        && request.resource.data.keys().hasOnly(['readAt'])
+        && request.resource.data.keys().hasAll(['readAt'])
+        && request.resource.data.readAt == request.time;
+      allow update, delete: if false;
+    }
+
     match /prayers/{prayerId} {
       allow get, list: if canReadPrayer(resource.data);
 
