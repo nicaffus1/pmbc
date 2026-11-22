@@ -1,28 +1,41 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
-      return request.auth != null;
-    }
-    function isAdmin() {
-      return signedIn()
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved';
-    }
+    function signedIn() { return request.auth != null; }
+    function userPath(uid) { return /databases/$(database)/documents/users/$(uid); }
     function approvedMember() {
       return signedIn()
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved';
+        && exists(userPath(request.auth.uid))
+        && get(userPath(request.auth.uid)).data.status == 'approved';
+    }
+    function isAdmin() {
+      return approvedMember()
+        && get(userPath(request.auth.uid)).data.role == 'admin';
+    }
+    function allowedPrayerFields(data) {
+      return data.keys().hasOnly([
+          'text', 'visibility', 'status', 'authorId', 'authorName', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'text', 'visibility', 'status', 'authorId', 'authorName', 'createdAt', 'updatedAt'
+        ])
+        && data.text is string && data.text.size() >= 3 && data.text.size() <= 2000
+        && data.visibility in ['members', 'leadership']
+        && data.status in ['active', 'answered']
+        && data.authorId is string
+        && data.authorName is string && data.authorName.size() >= 2 && data.authorName.size() <= 80;
+    }
+    function canReadPrayer(data) {
+      return approvedMember()
+        && (data.visibility == 'members'
+          || data.authorId == request.auth.uid
+          || isAdmin());
     }
 
     match /users/{userId} {
-      // Approved administrators may read all accounts to review pending registrations.
       allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
       allow list: if isAdmin();
 
-      // A new user can ONLY create their own pending member record.
-      // They cannot grant themselves approval or an administrator/leader role.
       allow create: if signedIn()
         && request.auth.uid == userId
         && request.resource.data.keys().hasOnly(['displayName','email','role','status','createdAt'])
@@ -35,14 +48,62 @@ service cloud.firestore {
         && request.resource.data.displayName.size() <= 80
         && request.resource.data.createdAt == request.time;
 
-      // Approval, roles and profile changes require an approved administrator.
       allow update: if isAdmin();
       allow delete: if false;
     }
-    // Everything else stays inaccessible until its feature-specific
-    // security rules have been designed, reviewed and tested.
-    match /{document=**} {
-      allow read, write: if false;
+
+    match /prayers/{prayerId} {
+      allow get, list: if canReadPrayer(resource.data);
+
+      // Approved member creates a request under their actual identity.
+      allow create: if approvedMember()
+        && allowedPrayerFields(request.resource.data)
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorName ==
+          get(userPath(request.auth.uid)).data.displayName
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      // Original author may edit the text, audience, and answered status.
+      // Administrators can moderate requests, but cannot replace the author.
+      allow update: if approvedMember()
+        && (resource.data.authorId == request.auth.uid || isAdmin())
+        && allowedPrayerFields(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['text','visibility','status','updatedAt'])
+        && request.resource.data.updatedAt == request.time;
+
+      // No accidental permanent removal of prayer history in V1.
+      allow delete: if false;
+
+      match /prayedBy/{memberId} {
+        // Members see only their own 'I Prayed' state, never a list of voters.
+        allow get: if approvedMember()
+          && request.auth.uid == memberId
+          && canReadPrayer(
+            get(/databases/$(database)/documents/prayers/$(prayerId)).data
+          );
+        allow list: if false;
+
+        allow create: if approvedMember()
+          && request.auth.uid == memberId
+          && canReadPrayer(
+            get(/databases/$(database)/documents/prayers/$(prayerId)).data
+          )
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.keys().hasAll(['createdAt'])
+          && request.resource.data.createdAt == request.time;
+        allow delete: if approvedMember()
+          && request.auth.uid == memberId
+          && canReadPrayer(
+            get(/databases/$(database)/documents/prayers/$(prayerId)).data
+          );
+        allow update: if false;
+      }
     }
+
+    // No access to other collections until they have dedicated rules.
+    match /{document=**} { allow read, write: if false; }
   }
 }
