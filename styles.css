@@ -41,3 +41,17 @@
 .shift-form{padding:12px 0;border-top:1px solid #e5ebf1;margin-top:12px}
 .shift-time-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .shift-time-row .field{min-width:0}
+
+/* Volunteer rosters and reversible position removal */
+.shift-roster{margin:11px 0;padding:11px;border-radius:10px;background:#edf6f7}
+.shift-roster strong{color:#0b5269}
+.shift-roster ul{margin:7px 0 0;padding-left:20px}
+.shift-roster li{font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.roster-setting{display:block;font-size:12px;font-weight:700;color:#32536b;margin:12px 0}
+.roster-setting select{font-weight:400}
+.position-archive{margin-top:14px;font-size:12px!important;border-color:#c9d5db;color:#566b7c}
+.archived-positions{margin-top:15px;border-top:1px solid #e2e9ef;padding-top:12px}
+.archived-positions summary{font-size:13px;font-weight:700;color:#4a6277;cursor:pointer}
+.archived-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0}
+.archived-entry span{font-size:13px}
+.archived-entry button{font-size:12px;padding:8px 11px}
