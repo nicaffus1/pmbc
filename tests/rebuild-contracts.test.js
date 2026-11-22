@@ -10,7 +10,7 @@ test("Firestore rules have only one complete global fallback",()=>{
  assert.match(rules,/allow create: if isAdmin\(\)/);
  assert.match(rules,/data.status != 'removed'/);
  assert.match(rules,/^\}\s*$/m);
- assert.ok(rules.trimEnd().endsWith("}\n}".trimEnd()));
+ assert.match(rules,/\n  \}\n\}\s*$/);
 });
 test("Serve uses an independently bound ministry action",()=>{
  const serve=read("serve.js");
