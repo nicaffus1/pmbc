@@ -2,7 +2,7 @@
 import { db } from "./firebase.js";
 import {
   collection, doc, addDoc, getDoc, setDoc, deleteDoc, updateDoc,
-  serverTimestamp, query, where, onSnapshot
+  serverTimestamp, increment, query, where, onSnapshot
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({
@@ -205,7 +205,9 @@ function watchFeed(){
     error=>{
       if(marker!==session)return;
       loaded.add(job.name);
-      errors.push("Cannot load prayer requests. Check that the updated Firestore rules are published ("+(error.code||"network error")+").");
+      errors.push(error.code==="failed-precondition"
+        ?"A Firestore query index may be needed for the prayer list. Check the link in the Firebase error message."
+        :"Cannot load prayer requests. Check that the updated Firestore rules are published ("+(error.code||"network error")+").");
       drawList();
     }
    );
@@ -291,8 +293,9 @@ async function markPrayed(id){
    const vote=doc(db,"prayers",id,"prayedBy",currentUser.uid);
    const existing=await getDoc(vote);
    if(existing.exists()){
-     const previousCount=Number.isInteger(existing.data().count)?existing.data().count:1;
-     await updateDoc(vote,{count:previousCount+1,lastPrayedAt:serverTimestamp()});
+     // Legacy acknowledgements have no count field; treat them as one prayer.
+     const value=Number.isInteger(existing.data().count)?increment(1):2;
+     await updateDoc(vote,{count:value,lastPrayedAt:serverTimestamp()});
    }else{
      await setDoc(vote,{count:1,createdAt:serverTimestamp()});
    }
