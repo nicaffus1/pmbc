@@ -100,6 +100,44 @@ function shiftList(mid,pid){
  </div>`;
 }
 
+
+function watchRecurringDate(mid,pid,schedule,date,token){
+ const key=recurringKey(mid,pid,schedule.id)+"/"+date;
+ if(recurringListeners.has(key))return;
+ recurringListeners.add(key);
+ const path=["ministries",mid,"positions",pid,"recurring",schedule.id,"dates",date,"members"];
+ const personal=doc(db,...path,account.uid);
+ stops.push(onSnapshot(personal,snapshot=>{
+  if(token!==sequence)return;
+  recurringJoined.set(key,snapshot.exists());draw();
+ },error=>{if(token===sequence)notice("Unable to load your weekly sign-up ("+(error.code||"error")+").",true);}));
+ if(admin()||schedule.rosterVisibility==="members"){
+  const stop=onSnapshot(collection(db,...path),snapshot=>{
+   if(token!==sequence)return;
+   recurringRosters.set(key,snapshot.docs.map(d=>({id:d.id,...d.data()}))
+    .sort((a,b)=>(a.memberName||"").localeCompare(b.memberName||"")));
+   draw();
+  },error=>{if(token===sequence)notice("Unable to load weekly roster ("+(error.code||"error")+").",true);});
+  recurringRostersListeners.set(key,stop);
+ }
+}
+function watchRecurring(mid,pid,token){
+ const key=positionKey(mid,pid), listenerKey="templates:"+key;
+ if(recurringListeners.has(listenerKey))return;
+ recurringListeners.add(listenerKey);
+ stops.push(onSnapshot(collection(db,"ministries",mid,"positions",pid,"recurring"),snapshot=>{
+  if(token!==sequence)return;
+  const records=new Map(snapshot.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
+  recurring.set(key,records);
+  for(const schedule of records.values())if(schedule.active){
+   for(const date of datesForSchedule(schedule,5))watchRecurringDate(mid,pid,schedule,date,token);
+  }
+  draw();
+ },error=>{
+  if(token===sequence)notice("Unable to load weekly schedules ("+(error.code||"error")+"). Please publish the updated rules.",true);
+ }));
+}
+
 function watchRoster(mid,pid,shift,token){
  const key=shiftKey(mid,pid,shift.id);
  const visibility=shift.rosterVisibility||"members";
