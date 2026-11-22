@@ -224,6 +224,9 @@ function resetEdit(){
  const subject=form.elements.namedItem("subjectName");
  subject.disabled=false;
  subject.required=true;
+ form.elements.namedItem("text").required=true;
+ form.elements.namedItem("text").placeholder="How can we pray?";
+ subject.placeholder="Enter a name";
  form.elements.namedItem("status").value="active";
  currentRoot.querySelector("#savePrayer").textContent="Post Prayer Request";
  currentRoot.querySelector("#cancelPrayerEdit").hidden=true;
