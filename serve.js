@@ -92,7 +92,7 @@ function shiftList(mid,pid){
       <option value="admins">Administrators only</option>
      </select></label>
     <p class="section-note">Times are Central Time. Each shift starts and ends on the same day.</p>
-    <button class="button outline" type="submit">Add Shift</button>
+    <button class="button outline" type="button" data-add-shift>Add Shift</button>
   </form>`:""}
  </div>`;
 }
@@ -248,7 +248,7 @@ function recurringUI(mid,pid){
     <option value="members">Approved members</option>
     <option value="admins">Administrators only</option>
    </select></label>
-  <button class="button outline" type="submit">Create Weekly Schedule</button>
+  <button class="button outline" type="button" data-add-recurring>Create Weekly Schedule</button>
  </form>`:""}
  </section>`;
 }
@@ -293,7 +293,7 @@ function ministryUI(entry){
    <label>Description (optional)
     <textarea class="field" name="description" maxlength="500" rows="2"
      placeholder="What will a volunteer do?"></textarea></label>
-   <button class="button outline" type="submit">Add Position</button>
+   <button class="button outline" type="button" data-add-position>Add Position</button>
   </form>`:""}
  </article>`;
 }
@@ -378,10 +378,8 @@ async function addMinistry(event){
   if(button?.isConnected){button.disabled=false;button.textContent="Add Ministry";}
  }
 }
-async function addPosition(event){
- const form=event.target.closest("[data-position-form]");
+async function addPosition(form){
  if(!form||!admin())return;
- event.preventDefault();
  const mid=form.dataset.mid;
  if(!ministries.get(mid)?.active)return;
  const title=String(form.elements.namedItem("title").value).trim();
@@ -389,7 +387,8 @@ async function addPosition(event){
  if(title.length<2||title.length>80||description.length>500){
    notice("Check the position title and description lengths.",true);return;
  }
- const button=form.querySelector("button[type=submit]");button.disabled=true;
+ const button=form.querySelector("[data-add-position]");button.disabled=true;
+ notice("Saving volunteer position…");
  try{
    await addDoc(collection(db,"ministries",mid,"positions"),{
      title,description,active:true,createdBy:account.uid,createdAt:serverTimestamp()
@@ -417,9 +416,7 @@ async function toggleSignup(button){
  finally{pendingWrites.delete(key);draw();}
 }
 
-async function addShift(event){
- event.preventDefault();
- const form=event.target.closest("[data-shift-form]");
+async function addShift(form){
  if(!form||!admin())return;
  const mid=form.dataset.mid,pid=form.dataset.pid;
  if(!ministries.get(mid)?.active||!positions.get(mid)?.get(pid)?.active)return;
@@ -433,7 +430,8 @@ async function addShift(event){
    ||endsAt<=startsAt||notes.length>300){
    notice("Enter a valid date and a later end time on the same day.",true);return;
  }
- const button=form.querySelector("[type=submit]");button.disabled=true;
+ const button=form.querySelector("[data-add-shift]");button.disabled=true;
+ notice("Saving scheduled shift…");
  try{
    await addDoc(collection(db,"ministries",mid,"positions",pid,"shifts"),{
      startsAt,endsAt,timeZone:"America/Chicago",notes,active:true,
@@ -472,10 +470,8 @@ async function toggleShift(button){
 
 
 
-async function addRecurring(event){
- event.preventDefault();
- if(!admin())return;
- const form=event.target;
+async function addRecurring(form){
+ if(!admin()||!form)return;
  const mid=form.dataset.mid,pid=form.dataset.pid;
  const title=form.elements.namedItem("title").value.trim();
  const weekday=Number(form.elements.namedItem("weekday").value);
@@ -485,7 +481,8 @@ async function addRecurring(event){
  const rosterVisibility=form.elements.namedItem("rosterVisibility").value;
  if(!positions.get(mid)?.get(pid)?.active||title.length<2||title.length>80
     ||weekday<0||weekday>6||!startTime||!endTime||endTime<=startTime||notes.length>300)return notice("Check the weekly schedule details and times.",true);
- const btn=form.querySelector("[type=submit]");btn.disabled=true;
+ const btn=form.querySelector("[data-add-recurring]");btn.disabled=true;
+ notice("Saving weekly schedule…");
  try{
   await addDoc(collection(db,"ministries",mid,"positions",pid,"recurring"),{
    title,weekday,startTime,endTime,notes,rosterVisibility,active:true,
@@ -591,6 +588,12 @@ async function onChange(event){
 }
 
 function onClick(event){
+ const positionCreate=event.target.closest("[data-add-position]");
+ if(positionCreate){addPosition(positionCreate.closest("[data-position-form]"));return;}
+ const shiftCreate=event.target.closest("[data-add-shift]");
+ if(shiftCreate){addShift(shiftCreate.closest("[data-shift-form]"));return;}
+ const recurrenceCreate=event.target.closest("[data-add-recurring]");
+ if(recurrenceCreate){addRecurring(recurrenceCreate.closest("[data-recurring-form]"));return;}
  const button=event.target.closest("[data-toggle-signup]");
  if(button){toggleSignup(button);return;}
  const shiftButton=event.target.closest("[data-toggle-shift]");
@@ -607,9 +610,10 @@ function onClick(event){
  if(archive)archiveRecurring(archive);
 }
 function onSubmit(event){
- if(event.target.matches("[data-position-form]")){addPosition(event);return;}
- if(event.target.matches("[data-shift-form]")){addShift(event);return;}
- if(event.target.matches("[data-recurring-form]"))addRecurring(event);
+ const form=event.target;
+ if(form.matches("[data-position-form]")){event.preventDefault();addPosition(form);return;}
+ if(form.matches("[data-shift-form]")){event.preventDefault();addShift(form);return;}
+ if(form.matches("[data-recurring-form]")){event.preventDefault();addRecurring(form);}
 }
 export function unmountServe(){
  sequence++;
