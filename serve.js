@@ -362,7 +362,8 @@ function watchPositions(mid,token){
 }
 async function addMinistry(event){
  event.preventDefault();if(!admin())return;
- const form=event.currentTarget;
+ const form=event.target.closest("#ministryForm");
+ if(!form)return;
  const name=String(form.elements.ministryName.value).trim();
  const description=String(form.elements.ministryDescription.value).trim();
  if(name.length<2||name.length>80||description.length>500){
@@ -370,10 +371,11 @@ async function addMinistry(event){
  }
  const button=form.querySelector("button[type=submit]");button.disabled=true;
  try{
-   await addDoc(collection(db,"ministries"),{
+   const created=await addDoc(collection(db,"ministries"),{
      name,description,active:true,createdBy:account.uid,createdAt:serverTimestamp()
    });
-   form.reset();notice("Ministry added.");
+   selectedMinistry=created.id;
+   form.reset();notice("Ministry added. Select it below to manage volunteer positions.");
  }catch(err){notice("Couldn't add ministry ("+(err.code||"error")+").",true);}
  finally{if(button.isConnected)button.disabled=false;}
 }
