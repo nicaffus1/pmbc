@@ -424,6 +424,7 @@ async function addShift(event){
  let endsAt;
  try{endsAt=shiftEnd(startsAt);}
  catch(error){notice(error.message,true);return;}
+ if(endsAt<=chicagoNow()){notice("Choose a future shift time.",true);return;}
  if(notes.length>300){notice("Notes must be 300 characters or fewer.",true);return;}
  const button=form.querySelector("[type=submit]");button.disabled=true;
  try{
@@ -478,6 +479,7 @@ async function editShift(event){
  let endsAt;
  try{endsAt=shiftEnd(startsAt);}
  catch(error){notice(error.message,true);return;}
+ if(endsAt<=chicagoNow()){notice("Choose a future shift time.",true);return;}
  if(notes.length>300){notice("Notes must be 300 characters or fewer.",true);return;}
  const changes={};
  if(startsAt!==existing.startsAt)changes.startsAt=startsAt;
