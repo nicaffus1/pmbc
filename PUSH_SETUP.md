@@ -1,51 +1,77 @@
-# PMBC phone push setup (first manual test)
+# PMBC Firebase notifications backend — deployment and first test
 
-This repository has a working in-app inbox. Phone alerts need these Firebase configuration and deployment steps before they can be delivered. No private Firebase Admin SDK key or service-account JSON should be committed to GitHub.
+The website is on GitHub Pages, but **push delivery and scheduled reminders run in Firebase Cloud Functions**, not GitHub Pages. All backend source files are under `functions/`.
 
-## 1. Get the public Web Push key
-1. Open https://console.firebase.google.com/project/pmbc-d6d17/settings/cloudmessaging
-2. Under **Web Push certificates**, click **Generate key pair** (if necessary).
-3. Copy the **public key**.
-4. In GitHub, edit `push-config.js` and paste the **public key only** into `PUBLIC_VAPID_KEY`.
-5. Commit the edit. GitHub Pages will publish this client-side change.
+## 1. Configure Firebase and billing
 
-The key is a public VAPID key and is intended for browsers. Do **not** paste any private key or service-account credentials into a repository.
+- Project: `pmbc-d6d17`
+- Open [Firebase Console](https://console.firebase.google.com/project/pmbc-d6d17/overview) and make sure the project is on the **Blaze** billing plan before deploying Cloud Functions. Set budget alerts and review your spending limits. Cloud Scheduler usage is billable; the scheduled job executes every 15 minutes.
+- Your public Web Push key is already in `push-config.js`. **Never publish the private key or service-account credentials.**
 
-## 2. Publish Firestore rules
-Copy the complete `firestore.rules` content from this repository into:
-https://console.firebase.google.com/project/pmbc-d6d17/firestore/rules
-Select **Publish**. The new rules let approved members save their own encrypted FCM routing tokens beneath `users/{uid}/pushTokens`. They do not let other members read those tokens.
+## 2. Publish the Firestore rules
 
-## 3. Deploy the trusted sender
-The sender is in `functions/index.js`; it **does not run on GitHub Pages**. It runs only after deploying to Firebase Cloud Functions.
+Open [Firebase Firestore Rules](https://console.firebase.google.com/project/pmbc-d6d17/firestore/rules), paste the complete contents of `firestore.rules` from this repository, and choose **Publish**.
 
-Firebase Cloud Functions requires the **Blaze (pay-as-you-go)** plan with billing enabled. Check your organization's approval, usage, and budget alerts before enabling billing.
+These rules separate:
+- Church-wide notifications, visible to approved members.
+- Admin-only notifications.
+- Private reminders, available only to their intended approved member and administrators.
+- Individual device tokens under `users/{uid}/pushTokens`, writable and readable only by their owner.
 
-From a terminal or Google Cloud Shell with the Firebase CLI installed, in this repository:
+## 3. Deploy the Cloud Functions
 
-```sh
+From a terminal with Node.js 22 and Firebase CLI:
+
+```bash
 npm install -g firebase-tools
 firebase login
-firebase use pmbc-d6d17
-cd functions && npm install && cd ..
+git clone https://github.com/nicaffus1/pmbc.git
+cd pmbc
+cd functions
+npm install
+npm test
+npm run check
+cd ..
 firebase deploy --only functions --project pmbc-d6d17
 ```
 
-If the Firebase CLI says this folder isn't a Firebase project, use the explicit `--project` argument above. Cloud Functions will deploy the `deliverAdminNotification` function in `us-central1`.
+You can also use Cloud Shell and the repository source if you don't want to install tools locally. This repository has a `firebase.json` pointing to the `functions/` directory. Do not use GitHub Actions secrets or commit credential files.
 
-The code delivers a push to currently **approved** members (for member notices), or only approved **admins** (for admin notices), who have opted in on their devices. Invalid device tokens are removed automatically. It deliberately does not include sensitive prayer details unless an admin wrote them into an announcement. Avoid including private member information in public messages.
+After successful deployment, confirm **both** functions in [Cloud Functions](https://console.firebase.google.com/project/pmbc-d6d17/functions):
+- `deliverAdminNotification`: Firestore trigger that pushes new notifications.
+- `sendScheduledReminders`: Cloud Scheduler job that scans for due event and Serve reminders every 15 minutes.
 
-## 4. Enable on iPhone
-1. Open https://nicaffus1.github.io/pmbc/ in Safari.
-2. Use Share > **Add to Home Screen**; open PMBC **from the Home Screen icon**.
-3. Log in as an approved member.
-4. Open the Notifications bell > **Enable Phone Alerts** and approve iOS permission.
-5. An admin opens Notifications > **Send notification**, selects the audience, and publishes a harmless test message.
-6. Lock the phone to verify alert delivery and tapping the alert opens PMBC.
+Firebase may prompt you to enable required Google Cloud APIs when deploying. Cloud Scheduler can also be checked in Google Cloud Console.
 
-Apple requires iOS 16.4 or newer and explicit permission for Home Screen web push. Alerts may be affected by Focus/Do Not Disturb/device settings.
+## 4. Opt in on each phone
 
-## Scope
-- **Implemented:** opt-in FCM device token registration, permission button, secure token rules, push display in the PMBC service worker, secure server sender, notification click-through, in-app inbox.
-- **Requires manual setup:** public VAPID key, Firestore rules publication, Cloud Functions deployment, optional billing approval.
-- **Not yet implemented:** automatic scheduled reminders for event times, Serve signups, unfilled slots, and prayers. Manual admin notices are the first test.
+On an iPhone, open PMBC in Safari, choose **Share > Add to Home Screen**, then open it from that new icon. Sign in with an approved member account.
+
+Open the top-right bell and choose **Enable Phone Alerts**. Accept the iOS permission request. The app will register this device with Firebase. The permission button won't send a phone alert until the backend is deployed.
+
+## 5. Manual push test
+
+With one opted-in device, an administrator goes to Notifications > **Send notification** and publishes a short member notification such as "PMBC push test" / "Testing church phone alerts" with the audience **All approved members**.
+
+After the backend is deployed, the corresponding function should send a push to that device and the entry will also appear in the in-app inbox.
+
+## Automatic reminders now implemented
+
+| Reminder | Recipient | Timing |
+|---|---|---|
+| Upcoming event | All approved members | Approximately 24 hours before the event |
+| Serving shift | Signed-up member only | Approximately 24 hours before |
+| Serving shift | Signed-up member only | Approximately 1 hour before |
+| Unfilled Serve shift | Administrators | Approximately 24 hours before |
+
+A reminder is added as a Firestore notification and appears in the appropriate inbox. It also produces a phone push for members who opted in. Scheduled scans run every 15 minutes, with a 30-minute due window to tolerate scheduling drift. Reminder IDs are deterministic, so overlapping scans will not create duplicates.
+
+Expired events, removed records, or inactive ministries, positions, and shifts are skipped. Only currently approved recipients receive device pushes. Private Serve reminders do not expose another member's shift through the general notification feed.
+
+**Not implemented yet:** automatic prayer reminders (frequency and audience still need to be selected), reminders for recurring Serve schedules, per-member push preference controls, and a production dashboard for delivery failures. Cloud delivery is not guaranteed by the operating system; Focus/Do Not Disturb and device settings may suppress alerts.
+
+## Operational cautions
+
+- Notification sending uses an **at-most-once dispatch claim** to avoid duplicate alerts on Firestore trigger retries. A rare server failure during sending can leave a partial delivery. Review `notificationDispatch/{notificationId}` and Cloud Function logs for failed attempts; they are not automatically re-sent.
+- If the church later grows to many ministries and shifts, the scheduled scan should be optimized or converted to indexed queries.
+- The backend is committed, but **not deployed or live-tested** by ChatGPT. Publishing Firestore rules does not deploy Cloud Functions.
