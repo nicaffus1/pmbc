@@ -41,3 +41,15 @@
 .shift-form{padding:12px 0;border-top:1px solid #e5ebf1;margin-top:12px}
 .shift-time-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .shift-time-row .field{min-width:0}
+
+/* Compact Serve navigation and administrator tools */
+.ministry-picker-label{display:block;font-size:13px;font-weight:700;color:#224b6a;margin-top:4px}
+#ministryPicker{margin-bottom:13px;background:#fff;font-size:16px}
+.admin-expander{border:1px solid #dce8ef;border-radius:12px;margin-top:14px;background:#f8fbfd}
+.admin-expander summary{cursor:pointer;padding:12px 14px;font-size:13px;font-weight:700;color:#0b596c;list-style-position:inside}
+.admin-expander[open] summary{border-bottom:1px solid #e1eaf1}
+.admin-expander form{padding:13px 14px 15px;margin-top:0}
+.admin-expander .stack>*+*{margin-top:0}
+.ministry-composer{margin-bottom:18px;box-shadow:none}
+.ministry-composer summary{font-size:14px}
+.shift-form,.position-form{border-top:0}
