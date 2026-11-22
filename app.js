@@ -37,14 +37,17 @@ function churchInfo(){
  </section>`;
 }
 function home() {
- return `<section class="card hero"><span class="eyebrow">PMBC</span><h1>Welcome to PMBC</h1><p>Worship. Pray. Connect. Serve.</p></section>
- <div class="grid"><button class="tile" data-go="prayer"><span class="emoji">♡</span><strong>Prayer</strong></button>
- <button class="tile" data-go="serve"><span class="emoji">♧</span><strong>Serve</strong></button>
- <button class="tile" data-go="more"><span class="emoji">▣</span><strong>Announcements</strong></button>
- <button class="tile" data-go="more"><span class="emoji">▤</span><strong>Church Information</strong></button></div>
- <h2>Announcements</h2>${info("No announcements available","Nothing has been published yet.")}
- <h2>Events</h2>${info("No events available","Nothing has been scheduled yet.")}
- <h2>Our Church</h2>${churchInfo()}`;
+ return `<section class="card hero home-welcome">
+   <span class="eyebrow">Providence Missionary Baptist Church</span>
+   <h1>Welcome</h1>
+   <p>Worship. Pray. Connect. Serve.</p>
+ </section>
+ <section class="home-updates" aria-label="Church updates">
+   <h2>Announcements</h2>
+   <div class="card empty-update"><p>No announcements have been posted yet.</p></div>
+   <h2>Upcoming Events</h2>
+   <div class="card empty-update"><p>No events have been scheduled yet.</p></div>
+ </section>`;
 }
 function prayer() {
  return '<div id="prayer-root"></div>';
