@@ -169,6 +169,9 @@ async function save(event){
   const path=kind==="event"?"events":"announcements";
   if(id)await updateDoc(doc(db,path,id),values);
   else await addDoc(collection(db,path),{...values,active:true,createdBy:uid,createdAt:serverTimestamp()});
+  // Close the form after a successful save; live snapshots refresh the list.
+  const panel=f.closest("details");
+  if(panel)panel.open=false;
   notice((kind==="event"?"Event":"Announcement")+(id?" updated.":" published."));
   if(!id)f.reset();
  }catch(err){notice("Could not save ("+(err.code||"error")+"). Check the published Firebase rules.",true);}
@@ -208,6 +211,11 @@ export function mountHomeUpdates(container,user,profile){
  if(!root)return;
  root.addEventListener("submit",save);
  root.addEventListener("click",handleClick);
+ const eventForm=root.querySelector('form[data-update-form="event"]:not([data-record-id])');
+ if(eventForm){
+   eventForm.elements.namedItem("time").innerHTML=timeOptions();
+   eventForm.elements.namedItem("duration").innerHTML=minutesOptions();
+ }
  const token=generation;
  for(const [kind,path] of [["announcement","announcements"],["event","events"]]){
   const reference=admin?collection(db,path):query(collection(db,path),where("active","==",true));
