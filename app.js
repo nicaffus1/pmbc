@@ -151,9 +151,9 @@ function home() {
    <div id="home-events"><p class="muted">Loading events…</p></div>
    <div id="home-event-history"></div>
  </section>
- <section class="home-video-section" aria-label="Latest church videos">
-  <div class="home-heading"><h2>Latest Videos</h2><a href="#videos" class="video-top-link">View all</a></div>
-  <div id="home-video-list"><p class="muted">Loading latest videos…</p></div>
+ <section class="home-video-section" aria-label="Latest church sermons">
+  <div class="home-heading"><h2>Latest Sermons</h2><a href="#videos" class="video-top-link">View all</a></div>
+  <div id="home-video-list"><p class="muted">Loading latest sermons…</p></div>
  </section>`;
 }
 function prayer() {
@@ -166,9 +166,9 @@ function notifications(){
  return '<div id="notifications-root"></div>';
 }
 function videos(){
- return `<div class="videos-page"><span class="eyebrow">Sermons &amp; Messages</span><h1>Church Videos</h1>
- <p class="muted">Latest uploads from Providence on YouTube.</p>
- <div id="videos-page-list"><p class="muted">Loading videos…</p></div></div>`;
+ return `<div class="videos-page"><span class="eyebrow">Sermons &amp; Messages</span><h1>Sermons</h1>
+ <p class="muted">Watch recent sermons and explore Providence’s YouTube archive.</p>
+ <div id="videos-page-list"><p class="muted">Loading sermons…</p></div></div>`;
 }
 function form() {
  let state = `<span class="eyebrow">Member access</span><h1>${authMode==="register"?"Request Membership":authMode==="reset"?"Reset Password":"Member Sign In"}</h1>
