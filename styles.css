@@ -7,3 +7,16 @@
 .auth-links button{border:0;background:transparent;color:#0a677c;text-decoration:underline;font:inherit;padding:7px 4px;cursor:pointer}
 .error{border-radius:11px;border:1px solid #edc7c7;background:#fff6f6;color:#8b2424;padding:12px}
 .card .button-row{margin-top:10px}
+
+/* PMBC Prayer Wall */
+.prayer-textarea{resize:vertical;min-height:128px;line-height:1.5}
+.prayer-entry{margin:13px 0}
+.prayer-entry .row{align-items:flex-start}
+.prayer-entry .itemtitle{overflow-wrap:anywhere}
+.prayer-body{white-space:normal;overflow-wrap:anywhere;color:#233e55;font-size:15px;line-height:1.55}
+.prayer-entry .button-row{display:flex;flex-wrap:wrap;gap:9px}
+#prayerForm .button-row{display:flex;gap:9px;flex-wrap:wrap}
+#prayerForm .section-note{margin:0 0 3px}
+#prayerNotice{margin:10px 0}
+#prayerComposer h2{margin-top:0}
+#prayer-root .pill.warning{background:#fff1dc;color:#784e12}
