@@ -5,3 +5,8 @@ compatibility_date = "2026-11-22"
 # After you deploy, copy the *.workers.dev URL into ../push-sender-config.js.
 # Add Firebase service-account JSON only as a Cloudflare encrypted secret:
 # wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON
+
+# Public Page identifier used by the Facebook posts proxy.
+# Keep the private FACEBOOK_PAGE_ACCESS_TOKEN in Cloudflare Secrets, never here.
+[vars]
+FACEBOOK_PAGE_ID = "108415754146503"
