@@ -115,7 +115,8 @@ function drawList(){
        <span class="prayer-person-arrow" aria-hidden="true">›</span>
      </button>
      <button class="prayer-check ${hasPrayed?"prayed":""}" type="button" data-prayed="${esc(id)}"
-       aria-label="I prayed for ${esc(prayerName(p))}" title="Mark that you prayed"
+       aria-label="${hasPrayed?"Record another prayer for":"I prayed for"} ${esc(prayerName(p))}"
+       title="${hasPrayed?"Tap to record another prayer":"Tap to mark that you prayed"}"
        ${busy?"disabled":""}>${hasPrayed?"✓":"○"}</button>
    </div>`;
  }).join("");
