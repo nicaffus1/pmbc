@@ -376,3 +376,14 @@
 .contact-form .section-note{font-size:12px;line-height:1.55;margin:0}
 .contact-email{display:inline-block;margin-top:13px;color:#0b6178;font-size:12px;text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
 .contact-panel>summary:focus-visible,.contact-email:focus-visible{outline:3px solid #00acb7;outline-offset:2px}
+
+/* PMBC v49 trial: public Facebook Page timeline above Upcoming Events. */
+.home-facebook-section{margin:24px 0 21px}
+.home-facebook-section .home-heading{margin:0 0 5px;align-items:baseline}
+.home-facebook-section .home-heading h2{margin:0;font-size:18px}
+.facebook-page-link{color:#0b6178;font-size:12px;font-weight:750;text-decoration:none;white-space:nowrap}
+.facebook-feed-intro{margin:4px 0 12px;color:#5d7689;font-size:12px;line-height:1.5}
+.facebook-feed-frame{border:1px solid #e1ebf1;border-radius:13px;overflow:hidden;background:#f8fafc;display:flex;justify-content:center;max-width:100%;min-height:490px}
+.facebook-feed-frame iframe{display:block;flex:none;border:none;max-width:100%;width:340px;min-height:490px}
+.facebook-feed-note{font-size:11px;color:#708394;line-height:1.5;margin:9px 0 0}
+.facebook-page-link:focus-visible{outline:3px solid #009da8;outline-offset:4px}
