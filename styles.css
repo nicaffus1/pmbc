@@ -143,3 +143,21 @@
 .ministry-settings-content>.archive-list{margin-top:12px}
 .ministry-settings-content .remove-control{font-size:12px}
 .ministry-settings:focus-within{border-color:#8fc2d0}
+
+/* Serve v25 — management belongs with the ministry selector, not the shifts. */
+.ministry-manage-panel{margin:0 0 13px;border:1px solid #dce8ef;border-radius:11px;background:#f7fafc}
+.ministry-manage-panel>summary{padding:10px 13px;cursor:pointer;color:#265b71;font-size:13px;font-weight:700}
+.ministry-manage-content{border-top:1px solid #e3ebf1;padding:2px 12px 12px}
+.ministry-manage-content>.admin-expander{margin-top:9px}
+.ministry-manage-content>.ministry-manage{margin-top:9px}
+.ministry-manage-content>.archive-list{margin-top:10px}
+.position-picker-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.position-picker-heading .position-picker-label{flex:1;margin:0}
+.position-add-compact{position:relative;flex-shrink:0}
+.position-add-compact>summary{cursor:pointer;color:#0b677b;font-size:12px;font-weight:750;padding:5px 8px;border-radius:8px;border:1px solid #c7e1e7;background:#f5fafb;list-style:none}
+.position-add-compact>summary::-webkit-details-marker{display:none}
+.position-add-compact[open]{flex:0 0 100%;width:100%}
+.position-picker-heading:has(.position-add-compact[open]){flex-wrap:wrap}
+.position-add-compact[open]>summary{display:inline-block}
+.position-add-compact>.position-form{padding:12px;margin-top:7px;background:#f6fafc;border:1px solid #dfebef;border-radius:10px}
+.position-add-compact>.position-form .button{align-self:flex-start}
