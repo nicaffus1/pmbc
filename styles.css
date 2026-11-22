@@ -387,3 +387,12 @@
 .facebook-feed-frame iframe{display:block;flex:none;border:none;max-width:100%;width:340px;min-height:490px}
 .facebook-feed-note{font-size:11px;color:#708394;line-height:1.5;margin:9px 0 0}
 .facebook-page-link:focus-visible{outline:3px solid #009da8;outline-offset:4px}
+
+/* PMBC v50: reliable Facebook link replaces blocked embedded timeline. */
+.facebook-updates-link{display:flex;align-items:center;gap:12px;padding:15px 13px;border-radius:13px;border:1px solid #d7e5ef;background:#f8fbfe;text-decoration:none;color:#133a58;margin-top:11px}
+.facebook-updates-icon{display:flex;align-items:center;justify-content:center;background:#1877f2;color:white;font:800 23px/1 Arial,sans-serif;border-radius:9px;width:39px;height:39px;flex:none;padding-top:5px}
+.facebook-updates-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.facebook-updates-copy strong{font-size:14px}
+.facebook-updates-copy>span{color:#667c91;font-size:12px;line-height:1.4}
+.facebook-updates-arrow{font-size:19px;color:#3179af}
+.facebook-updates-link:focus-visible{outline:3px solid #00acb7;outline-offset:3px}
