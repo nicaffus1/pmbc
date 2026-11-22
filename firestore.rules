@@ -128,8 +128,11 @@ service cloud.firestore {
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt == request.time;
 
-      // Ministry editing and delegated leader roles are later steps.
-      allow update, delete: if false;
+      // Administrators can archive and restore a ministry without deleting its history.
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['active'])
+        && request.resource.data.active is bool;
+      allow delete: if false;
 
       match /positions/{positionId} {
         allow get, list: if approvedMember();
@@ -240,10 +243,14 @@ service cloud.firestore {
             && request.resource.data.active == true
             && request.resource.data.createdBy == request.auth.uid
             && request.resource.data.createdAt == request.time;
-          // Only admins may change roster visibility after publication.
+          // Only admins may archive/restore a shift or change its roster audience.
+          // All other fields (including signups and schedule history) stay unchanged.
           allow update: if isAdmin()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rosterVisibility'])
-            && request.resource.data.rosterVisibility in ['members','admins'];
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['rosterVisibility','active'])
+            && request.resource.data.active is bool
+            && (!('rosterVisibility' in request.resource.data)
+                || request.resource.data.rosterVisibility in ['members','admins']);
           allow delete: if false;
 
           match /signups/{memberId} {
