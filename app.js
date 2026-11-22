@@ -1,6 +1,7 @@
 // PMBC live member access. Registration remains disabled until Firestore rules are published.
 import { auth, db } from "./firebase.js";
 import { mountPrayer, unmountPrayer } from "./prayer.js";
+import { mountServe, unmountServe } from "./serve.js";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification
@@ -36,9 +37,7 @@ function prayer() {
  return '<div id="prayer-root"></div>';
 }
 function serve() {
- return `<span class="eyebrow">Get involved</span><h1>Serve</h1><p class="muted">Events, ministries and volunteer shifts.</p>
- <div class="notice">${isApproved() ? "There are no serving opportunities yet. Scheduling will be enabled when its database rules are ready." : escapeHTML(signedInMessage())}</div>
- ${!user ? '<button class="button" data-go="more">Member Sign In</button>' : ''}`;
+ return '<div id="serve-root"></div>';
 }
 function form() {
  let state = `<span class="eyebrow">Member access</span><h1>${authMode==="register"?"Request Membership":authMode==="reset"?"Reset Password":"Member Sign In"}</h1>
@@ -85,8 +84,10 @@ function navigate(next) {
 }
 function render(){
  unmountPrayer();
+ unmountServe();
  screen.innerHTML=views[section]();
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
+ if(section==="serve") mountServe(screen.querySelector("#serve-root"),user,profile);
  navTabs.forEach(b=>b.classList.toggle("active",b.dataset.tab===section));
  document.title="PMBC — "+section[0].toUpperCase()+section.slice(1);
  screen.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{location.hash=b.dataset.go;}));
