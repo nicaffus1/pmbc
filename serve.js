@@ -14,6 +14,7 @@ let stops=[], ministries=new Map(), positions=new Map();
 let shifts=new Map(), shiftJoined=new Map(), shiftRosters=new Map();
 let rosterSubscriptions=new Map();
 let knownPositionListeners=new Set(), knownShiftListeners=new Set(), pendingWrites=new Set();
+let watchedMinistries=new Set();
 let selectedMinistryId="", expandedPanels=new Set();
 
 const approved=()=>!!account && profile?.status==="approved";
@@ -244,6 +245,8 @@ function draw(){
  }
 }
 function watchPositions(mid,token){
+ if(watchedMinistries.has(mid))return;
+ watchedMinistries.add(mid);
  const unsub=onSnapshot(collection(db,"ministries",mid,"positions"),snap=>{
    if(sequence!==token)return;
    const records=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
@@ -374,7 +377,52 @@ async function shareRoster(button){
  }finally{pendingWrites.delete(lock);}
 }
 
+async function setArchived(type,mid,pid,sid,archive){
+ if(!admin())return;
+ const entity=type==="ministry"?ministries.get(mid):
+   type==="position"?positions.get(mid)?.get(pid):
+     shifts.get(positionKey(mid,pid))?.get(sid);
+ if(!entity)return;
+ if(archive && entity.active===false)return;
+ if(!archive && entity.active!==false)return;
+ const label=type==="ministry"?entity.name:type==="position"?entity.title:
+   showShiftTime(entity.startsAt);
+ if(archive){
+   const affected=type==="ministry"?
+     " Its volunteer positions and shifts will be hidden, but their records and sign-ups are preserved.":
+     type==="position"?
+       " Its shifts and volunteer sign-ups will be preserved.":
+       " Existing volunteer sign-ups will be preserved.";
+   if(!window.confirm("Remove "+type+" '"+label+"' from active Serve opportunities?"+affected+
+     " You can restore it later."))return;
+ }
+ const key="archive:"+type+":"+mid+":"+(pid||"")+":"+(sid||"");
+ if(pendingWrites.has(key))return;
+ pendingWrites.add(key);
+ const path=type==="ministry"?["ministries",mid]:
+   type==="position"?["ministries",mid,"positions",pid]:
+     ["ministries",mid,"positions",pid,"shifts",sid];
+ try{
+   await updateDoc(doc(db,...path),{active:!archive});
+   notice(type[0].toUpperCase()+type.slice(1)+(archive?" removed.":" restored.")+
+     " Existing volunteer history was preserved.");
+ }catch(error){
+   notice("Couldn't "+(archive?"remove":"restore")+" "+type+" ("+
+     (error.code||"error")+"). The updated Firebase rules may need publishing.",true);
+ }finally{pendingWrites.delete(key);}
+}
+
 function onClick(event){
+ const removeButton=event.target.closest("[data-archive-item]");
+ if(removeButton){
+   const {mid,pid,sid,archiveItem}=removeButton.dataset;
+   setArchived(archiveItem,mid,pid,sid,true);return;
+ }
+ const restoreButton=event.target.closest("[data-restore-item]");
+ if(restoreButton){
+   const {mid,pid,sid,restoreItem}=restoreButton.dataset;
+   setArchived(restoreItem,mid,pid,sid,false);return;
+ }
  const share=event.target.closest("[data-share-roster]");
  if(share){shareRoster(share);return;}
  const shiftButton=event.target.closest("[data-toggle-shift]");
@@ -392,7 +440,7 @@ export function unmountServe(){
  rosterSubscriptions=new Map();
  stops=[];ministries=new Map();positions=new Map();
  shifts=new Map();shiftJoined=new Map();shiftRosters=new Map();
- knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();
+ knownPositionListeners=new Set();knownShiftListeners=new Set();pendingWrites=new Set();watchedMinistries=new Set();
  selectedMinistryId="";expandedPanels=new Set();
  root=null;account=null;profile=null;
 }
@@ -428,7 +476,7 @@ export function mountServe(container,user,userProfile){
  stops.push(onSnapshot(collection(db,"ministries"),snap=>{
    if(token!==sequence)return;
    for(const d of snap.docs){
-     if(d.data().active && !ministries.has(d.id))watchPositions(d.id,token);
+     if(d.data().active)watchPositions(d.id,token);
    }
    ministries=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
    draw();
