@@ -409,3 +409,10 @@
 .facebook-post-photos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:7px;background:#e9f0f5}
 .facebook-post-photos img:only-child{grid-column:1/-1;max-height:360px;aspect-ratio:16/10}
 .facebook-post-card>a:focus-visible{outline:3px solid #00acb7;outline-offset:3px}
+
+
+/* Share the church app from More, using the native iPhone share sheet. */
+.share-pmbc-card h2{margin:0 0 8px}
+.share-pmbc-card p{font-size:14px;color:#546e82}
+.share-pmbc-button{margin-top:8px;width:100%;background:#0a6479;font-weight:700}
+.share-pmbc-card .section-note{margin:10px 0 0;font-size:12px}
