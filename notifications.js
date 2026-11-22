@@ -25,7 +25,7 @@ function render(){
  list.innerHTML=items.length?items.map(([id,n])=>{const read=reads.has(id);
   return '<article class="card notification-entry '+(read?"read":"unread")+'">'+
    '<div class="notification-label">'+esc(labels[n.kind]||"General")+
-   (n.audience==="admins"?' · Admin only':"")+(read?"":" · New")+'</div>'+
+   (n.audience==="admins"?' · Admin only':n.audience==="person"?' · Personal reminder':"")+(read?"":" · New")+'</div>'+
    '<strong>'+esc(n.title)+'</strong><p>'+esc(n.body)+'</p>'+
    '<div class="notification-actions">'+(!read?
     '<button type="button" class="button outline" data-mark-read="'+esc(id)+'">Mark as read</button>':
@@ -156,7 +156,8 @@ export function mountNotifications(container,user,profile){
  root.querySelector("#notificationForm")?.addEventListener("submit",submit);
  const token=seq;
  const jobs=admin?[["all",collection(db,"notifications")]]:
-  [["members",query(collection(db,"notifications"),where("audience","==","members"))]];
+  [["members",query(collection(db,"notifications"),where("audience","==","members"))],
+   ["personal",query(collection(db,"notifications"),where("recipientId","==",uid))]];
  for(const [key,ref] of jobs){
   stops.push(onSnapshot(ref,snap=>{
    if(token!==seq)return;
