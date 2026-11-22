@@ -93,6 +93,21 @@ function churchInfo(){
    </div>
  </section>`;
 }
+function facebookUpdates(){
+ const page="https://www.facebook.com/providencembccenter/";
+ const iframe="https://www.facebook.com/plugins/page.php?href="+encodeURIComponent(page)+
+  "&tabs=timeline&width=340&height=490&small_header=true&adapt_container_width=true&hide_cover=true&show_facepile=false";
+ return `<section class="home-facebook-section" aria-label="Facebook church updates">
+  <div class="home-heading"><h2>From Facebook</h2><a class="facebook-page-link" href="${page}" target="_blank" rel="noopener noreferrer">Open Facebook ↗</a></div>
+  <p class="facebook-feed-intro">Recent updates posted by Providence Missionary Baptist Church.</p>
+  <div class="facebook-feed-frame">
+   <iframe title="Providence Missionary Baptist Church Facebook updates" src="${iframe}"
+    width="340" height="490" loading="lazy" scrolling="no" frameborder="0"
+    allow="encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  </div>
+  <p class="facebook-feed-note">Facebook controls which posts appear here. If the feed is blank, use Open Facebook above.</p>
+ </section>`;
+}
 function home() {
  return `<section class="card hero home-welcome">
    <span class="eyebrow">Providence Missionary Baptist Church</span>
@@ -101,6 +116,7 @@ function home() {
  </section>
  <section id="daily-verse" class="daily-verse card" aria-label="Verse of the Day"></section>
  ${givingCard(true)}
+ ${facebookUpdates()}
  <div id="updates-notice" class="notice" hidden></div>
  <section class="home-updates" aria-label="Church updates">
    <div class="home-heading"><h2>Upcoming Events</h2>
