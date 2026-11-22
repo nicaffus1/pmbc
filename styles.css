@@ -257,3 +257,11 @@
 .notification-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .notification-actions .button{padding:9px 11px;font-size:12px}
 .notification-remove{color:#87545b;border-color:#dec1c5}
+
+/* Free manual Firebase Console push test controls. */
+.push-token-panel{margin-top:15px;padding-top:13px;border-top:1px solid #e0ebef}
+.push-token-panel[hidden]{display:none}
+.push-token-panel label{display:block;font-size:12px;font-weight:700;color:#32596e;margin:0 0 6px}
+.push-token-panel textarea{font-size:12px;overflow-wrap:anywhere;word-break:break-all;margin-bottom:10px;resize:none}
+.manual-push-admin{margin-top:16px}
+.manual-push-admin>.button{display:inline-flex;width:auto;text-decoration:none}
