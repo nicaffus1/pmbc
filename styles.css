@@ -53,3 +53,11 @@
 .ministry-composer{margin-bottom:18px;box-shadow:none}
 .ministry-composer summary{font-size:14px}
 .shift-form,.position-form{border-top:0}
+
+/* Shift volunteer names for approved members */
+.shift-roster{margin:10px 0;padding:10px 12px;background:#eef7f8;border:1px solid #dcebed;border-radius:10px}
+.shift-roster strong{font-size:13px;color:#0b5269}
+.shift-roster ul{margin:5px 0 0;padding-left:19px}
+.shift-roster li{font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.shift-roster .muted{font-size:12px;margin:5px 0 0}
+.roster-share{font-size:12px!important;margin:5px 0 6px}
