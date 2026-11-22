@@ -320,3 +320,15 @@
 .videos-page>.muted{font-size:13px;margin-bottom:19px}
 .videos-page .video-grid{gap:14px}
 @media(max-width:420px){.home-video-section .video-grid{grid-template-columns:1fr}.video-grid{grid-template-columns:1fr 1fr;gap:9px}.video-info{padding:9px}.video-info strong{font-size:12px}}
+
+/* PMBC v40 — online giving uses the church's external Givelify page. */
+.giving-home-link{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 21px;padding:13px 16px;background:#edf7f8;border:1px solid #cde6ea;border-radius:12px;color:#134f66;text-decoration:none}
+.giving-home-link>span{font-size:13px;font-weight:650}
+.giving-home-link strong{white-space:nowrap;font-size:14px;color:#087185}
+.giving-home-link:focus-visible,.giving-button:focus-visible{outline:3px solid #008f9e;outline-offset:3px}
+.giving-card{margin:19px 0 14px}
+.giving-card h2{margin:0 0 9px;font-size:19px}
+.giving-card>p:not(.section-note){font-size:14px;line-height:1.6;margin:0 0 14px;color:#344e64}
+.giving-card .giving-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.giving-card .section-note{font-size:12px;line-height:1.5;margin:12px 0 0}
+@media(max-width:380px){.giving-home-link{padding:12px;gap:7px}.giving-home-link>span{font-size:12px}.giving-home-link strong{font-size:13px}}
