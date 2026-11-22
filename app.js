@@ -259,7 +259,7 @@ function render(){
  unmountFacebookPosts();
  screen.innerHTML=views[section]();
  if(section==="home"){ mountHomeUpdates(screen,user,profile);mountDailyVerse();mountFacebookPosts();mountVideos(false); }
- if(section==="videos") mountVideos(true,isAdmin());
+ if(section==="videos") mountVideos(true);
  if(section==="notifications") mountNotifications(screen.querySelector("#notifications-root"),user,profile);
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
  if(section==="serve") mountServe(screen.querySelector("#serve-root"),user,profile);
