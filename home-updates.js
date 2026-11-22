@@ -221,7 +221,8 @@ export function mountHomeUpdates(container,user,profile){
   const reference=admin?collection(db,path):query(collection(db,path),where("active","==",true));
   const unsub=onSnapshot(reference,snap=>{
    if(token!==generation)return;
-   (kind==="event"?events:announcements)=new Map(snap.docs.map(d=>[d.id,d.data()]));
+   const records=new Map(snap.docs.map(d=>[d.id,d.data()]));
+   if(kind==="event")events=records;else announcements=records;
    loaded.add(kind);
    draw();
   },err=>{
