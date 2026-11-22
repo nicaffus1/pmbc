@@ -19,7 +19,7 @@ jobs:
       - run: npm install
       - run: npm test
       - run: npm run test:rules
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:browser
       - run: node --check app.js
       - run: node --check serve.js
