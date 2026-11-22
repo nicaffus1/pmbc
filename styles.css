@@ -332,3 +332,8 @@
 .giving-card .giving-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
 .giving-card .section-note{font-size:12px;line-height:1.5;margin:12px 0 0}
 @media(max-width:380px){.giving-home-link{padding:12px;gap:7px}.giving-home-link>span{font-size:12px}.giving-home-link strong{font-size:13px}}
+
+/* Five balanced bottom tabs, including church Videos. */
+.bottom{grid-template-columns:repeat(5,minmax(0,1fr))}
+.bottom button{min-width:0;min-height:49px;padding:4px 1px;justify-content:center}
+.bottom button[data-tab="videos"] .glyph{font-size:20px;line-height:1.5}
