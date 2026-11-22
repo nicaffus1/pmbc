@@ -448,14 +448,11 @@ service cloud.firestore {
       }
     }
 
-    // Public sermon index. Admin-only edits to trusted sermon metadata.
+    // Public sermon index. Only approved administrators can edit records.
     match /sermons/{sermonId} {
       function validSermon(data) {
-        return sermonId.matches('^[A-Za-z0-9_-]{11}
-    match /{document=**} { allow read, write: if false; }
-  }
-}
-)
+        return sermonId.size() == 11
+          && sermonId.matches('^[A-Za-z0-9_-]+$')
           && data.keys().hasOnly(['id','title','speaker','scripture','series','topics','description','published','updatedAt'])
           && data.keys().hasAll(['id','title','speaker','scripture','series','topics','description','published','updatedAt'])
           && data.id == sermonId
