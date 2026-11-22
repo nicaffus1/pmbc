@@ -1,7 +1,7 @@
 // PMBC Serve — ministry positions and member opt-in, backed by Firestore.
 import { db } from "./firebase.js";
 import {
-  collection, doc, addDoc, setDoc, deleteDoc,
+  collection, doc, addDoc, setDoc, deleteDoc, updateDoc,
   onSnapshot, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
@@ -11,7 +11,8 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({
 
 let root=null, account=null, profile=null, sequence=0;
 let stops=[], ministries=new Map(), positions=new Map(), joined=new Map();
-let shifts=new Map(), shiftJoined=new Map();
+let shifts=new Map(), shiftJoined=new Map(), shiftRosters=new Map();
+let rosterSubscriptions=new Map();
 let knownPositionListeners=new Set(), knownShiftListeners=new Set(), pendingWrites=new Set();
 let selectedMinistryId="", expandedPanels=new Set();
 
@@ -26,12 +27,6 @@ function notice(message,isError=false){
  el.hidden=!message;
  el.className=isError?"error":"notice";
  el.textContent=message;
-}
-function volunteerUI(mid,pid){
- const key=positionKey(mid,pid), isJoined=joined.get(key)===true;
- return `<button class="button ${isJoined?"outline":""}" type="button"
- data-toggle-signup data-mid="${esc(mid)}" data-pid="${esc(pid)}"
- ${pendingWrites.has(key)?"disabled":""}>${isJoined?"✓ Volunteering — Leave Position":"I'd Like to Serve"}</button>`;
 }
 
 function chicagoNow(){
@@ -55,9 +50,24 @@ function shiftList(mid,pid){
  const rows=list.map(x=>{
   const key=shiftKey(mid,pid,x.id), signed=shiftJoined.get(key)===true;
   const past=x.endsAt<chicagoNow();
+  const visibility=x.rosterVisibility||"members";
+  const audienceAllowed=admin()||visibility==="members";
+  const roster=shiftRosters.get(key);
+  const rosterMarkup=audienceAllowed?
+    `<div class="shift-roster">
+      <strong>Volunteers (${roster?.length??"…"})</strong>
+      ${!roster?'<p class="muted">Loading volunteers…</p>':
+        roster.length?`<ul>${roster.map(m=>"<li>"+esc(m.memberName||"Church Member")+"</li>").join("")}</ul>`:
+        '<p class="muted">No volunteers signed up yet.</p>'}
+    </div>`:
+    '<p class="section-note">Volunteer names are currently restricted to administrators.</p>';
   return `<div class="shift-entry">
     <strong>${showShiftTime(x.startsAt)} to ${showShiftTime(x.endsAt).split(" · ").pop()} CT</strong>
     ${x.notes?`<p>${esc(x.notes)}</p>`:""}
+    ${rosterMarkup}
+    ${admin()&&visibility!=="members"?`<button type="button" class="button outline roster-share"
+      data-share-roster data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}">
+      Share volunteer names with members</button>`:""}
     <button class="button ${signed?"outline":""}" type="button" data-toggle-shift
       data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}"
       ${pendingWrites.has("shift:"+key)||(!signed&&past)?"disabled":""}>
@@ -75,12 +85,7 @@ function shiftList(mid,pid){
       <label>End time<input class="field" name="end" type="time" required></label>
     </div>
     <label>Notes (optional)<input class="field" name="notes" maxlength="300"></label>
-    <label>Who can see volunteer names?
-      <select class="field" name="rosterVisibility">
-        <option value="members">Approved members</option>
-        <option value="admins">Administrators only</option>
-      </select>
-    </label>
+    <p class="section-note">Volunteer names are visible to all approved members and administrators.</p>
     <p class="section-note">Times are Central Time. Each shift starts and ends on the same day.</p>
     <button class="button outline" type="submit">Save Shift</button>
   </form></details>`:""}
@@ -118,8 +123,6 @@ function positionUI(mid,entry){
  return `<div class="position-item">
   <strong>${esc(data.title)}</strong>
   ${data.description?`<p>${esc(data.description)}</p>`:""}
-  <p class="section-note">Ongoing ministry interest</p>
-  ${volunteerUI(mid,id)}
   ${shiftList(mid,id)}
  </div>`;
 }
@@ -282,7 +285,7 @@ async function addShift(event){
  try{
    await addDoc(collection(db,"ministries",mid,"positions",pid,"shifts"),{
      startsAt,endsAt,timeZone:"America/Chicago",notes,active:true,
-     rosterVisibility:form.elements.namedItem("rosterVisibility").value,
+     rosterVisibility:"members",
      createdBy:account.uid,createdAt:serverTimestamp()
    });
    form.reset();notice("Scheduled shift added.");
