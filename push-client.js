@@ -20,11 +20,15 @@ async function tokenId(token){
 }
 export async function enablePush(uid){
  if(!uid)throw Error("Sign in before enabling notifications.");
- const support=await pushSupport();
- if(!support.ready)throw Error(support.reason);
- // Permission request must happen directly following the member's button tap.
+ if(!pushConfigured())throw Error("Firebase Web Push public key is not configured yet.");
+ if(!("serviceWorker" in navigator)||!("Notification" in window))
+  throw Error("This browser does not support phone push alerts.");
+ // iOS requires the permission prompt to originate directly from a button tap,
+ // before any asynchronous check can lose the user gesture.
  const permission=await Notification.requestPermission();
  if(permission!=="granted")throw Error("Notification permission was not granted. Check your device's notification settings.");
+ const support=await pushSupport();
+ if(!support.ready)throw Error(support.reason);
  const reg=await navigator.serviceWorker.ready;
  const messaging=getMessaging(firebaseApp);
  const token=await getToken(messaging,{vapidKey:PUBLIC_VAPID_KEY,serviceWorkerRegistration:reg});
