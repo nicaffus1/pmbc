@@ -409,36 +409,3 @@
 .facebook-post-photos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:7px;background:#e9f0f5}
 .facebook-post-photos img:only-child{grid-column:1/-1;max-height:360px;aspect-ratio:16/10}
 .facebook-post-card>a:focus-visible{outline:3px solid #00acb7;outline-offset:3px}
-
-
-/* PMBC Church News: compact swipeable Home cards and readable full feed. */
-.facebook-carousel{display:flex!important;gap:12px!important;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-top:11px;padding:2px 2px 10px}
-.facebook-carousel::-webkit-scrollbar{display:none}
-.facebook-slide{flex:0 0 86%;min-width:0;scroll-snap-align:start}
-.facebook-carousel .facebook-post-card{height:100%;min-height:255px;display:flex;flex-direction:column;margin:0;background:#f7fafc;border-color:#dae8ed;box-shadow:0 2px 9px #1435500b}
-.facebook-post-card .facebook-post-meta{flex-direction:row;align-items:center;justify-content:space-between;gap:8px}
-.facebook-post-meta strong{font-size:12px}
-.facebook-post-compact .facebook-cover{width:100%;height:118px;object-fit:cover;border-radius:9px;margin-top:10px;background:#eaf0f3}
-.facebook-post-compact .facebook-message{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden;white-space:pre-line;font-size:13px;line-height:1.5;margin:10px 0}
-.facebook-post-compact>a{margin-top:auto;padding-top:8px}
-.facebook-carousel-dots{display:flex;justify-content:center;gap:6px;margin:1px 0 8px}
-.facebook-carousel-dots[hidden]{display:none}
-.facebook-dot{width:6px;height:6px;background:#c6d9df;border-radius:50%}
-.facebook-dot.current{width:17px;border-radius:7px;background:#138c99}
-.church-news-page .eyebrow{display:block;margin:16px 0 8px}
-.church-news-page h1{margin-bottom:8px}
-.news-back,.news-facebook-link{color:#0b6178;text-decoration:none;font-size:13px;font-weight:750}
-.news-facebook-link{display:inline-block;margin:18px 0 12px}
-.facebook-news-list{display:grid;gap:14px;margin:19px 0}
-.facebook-news-list .facebook-post-card{margin:0;padding:16px}
-.facebook-post-full .facebook-cover{display:block;max-width:100%;width:100%;max-height:360px;object-fit:contain;background:#eef3f6;border-radius:10px;margin:11px 0}
-.facebook-post-full .facebook-message{white-space:pre-wrap;overflow-wrap:anywhere;margin:11px 0;line-height:1.6}
-.facebook-extra-photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px}
-.facebook-extra-photos img{width:100%;height:90px;object-fit:cover;border-radius:7px}
-.home-quick-actions{margin:24px 0}
-.home-quick-actions h2{font-size:18px;margin:0 0 12px}
-.quick-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.quick-action-grid a{display:flex;align-items:center;gap:10px;padding:13px 12px;min-height:55px;border:1px solid #dce9ed;background:#f5fafb;border-radius:12px;text-decoration:none;color:#0d5670;font-size:20px}
-.quick-action-grid a span{font-size:13px;font-weight:700;color:#163a57}
-.facebook-carousel a:focus-visible,.church-news-page a:focus-visible,.quick-action-grid a:focus-visible{outline:3px solid #00acb7;outline-offset:2px}
-@media(min-width:540px){.facebook-slide{flex-basis:78%}}
