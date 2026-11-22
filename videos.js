@@ -24,11 +24,34 @@ function cards(items){
 }
 function show(section,all){
  const target=document.querySelector(section);if(!target)return;
- const data=(cache?.videos||[]).slice(0,all?10:3);
- target.innerHTML=data.length?'<div class="video-grid">'+cards(data)+'</div>'+
-  (!all?'<a class="video-more-link" href="#videos">See all recent videos →</a>':""):
-  '<p class="section-note">Recent videos could not be loaded. You can still watch on YouTube.</p>'+
-  '<a class="video-more-link" href="'+CHANNEL+'" target="_blank" rel="noopener noreferrer">Open our YouTube channel →</a>';
+ const items=(cache?.videos||[]).filter(v=>/^[a-zA-Z0-9_-]{11}$/.test(String(v.id||"")));
+ if(!items.length){
+  target.innerHTML='<p class="section-note">Recent sermons could not be loaded. You can still watch on YouTube.</p>'+
+   '<a class="video-more-link" href="'+CHANNEL+'" target="_blank" rel="noopener noreferrer">Visit our YouTube channel →</a>';
+  return;
+ }
+ if(!all){
+  target.innerHTML='<div class="video-grid">'+cards(items.slice(0,3))+'</div>'+
+   '<a class="video-more-link" href="#videos">Browse sermons →</a>';
+  return;
+ }
+ target.innerHTML='<section class="sermon-featured" aria-label="Latest sermon"><h2>Latest Sermon</h2><div class="video-grid">'+cards(items.slice(0,1))+'</div></section>'+
+  '<div class="sermon-library-heading"><h2>Recent Sermons</h2><span class="muted">'+items.length+' recent uploads</span></div>'+
+  '<label class="sermon-search-label" for="sermonSearch">Search recent sermons</label>'+
+  '<input id="sermonSearch" class="field sermon-search" type="search" placeholder="Search by title, topic, or speaker" autocomplete="off">'+
+  '<div id="sermon-results" class="video-grid">'+cards(items)+'</div>'+
+  '<p id="sermon-empty" class="section-note" hidden>No recent sermons match your search.</p>'+
+  '<div class="sermon-archive"><h2>Full Sermon Archive</h2><p>Browse all available videos and older sermons directly on our YouTube channel.</p>'+
+  '<a class="video-more-link" href="'+CHANNEL+'/videos" target="_blank" rel="noopener noreferrer">Browse our YouTube archive →</a></div>';
+ const input=target.querySelector("#sermonSearch");
+ const results=target.querySelector("#sermon-results");
+ const empty=target.querySelector("#sermon-empty");
+ input?.addEventListener("input",()=>{
+  const q=input.value.trim().toLocaleLowerCase();
+  const filtered=items.filter(v=>(String(v.title||"")+" "+date(v.published)).toLocaleLowerCase().includes(q));
+  results.innerHTML=cards(filtered);
+  empty.hidden=filtered.length>0;
+ });
 }
 export function unmountVideos(){active++;if(abort){abort.abort();abort=null;}}
 export function mountVideos(all=false){
