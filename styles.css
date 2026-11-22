@@ -210,3 +210,28 @@
 #prayer-root .prayer-composer{margin:15px 0 19px}
 #prayer-root .prayer-list-guidance{font-size:12px;color:#637c8c;margin:0 0 12px;line-height:1.5}
 #prayer-root .prayer-check.prayed:disabled{opacity:1;cursor:default}
+
+/* Home announcements and events: readable cards with compact admin controls. */
+.home-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:21px}
+.home-heading h2{margin:0 0 10px}
+.home-create{margin-bottom:9px;flex-shrink:0;position:relative}
+.home-create>summary{cursor:pointer;list-style:none;font-size:12px;font-weight:750;color:#0b6575;border:1px solid #cbe1e5;background:#f4fafb;border-radius:8px;padding:7px 11px}
+.home-create>summary::-webkit-details-marker{display:none}
+.home-create[open]{width:100%;flex-basis:100%}
+.home-heading:has(.home-create[open]){flex-wrap:wrap}
+.home-create .update-editor{padding:14px;background:#f9fcfd;border:1px solid #e1ebf0;border-radius:12px;margin:7px 0 10px}
+.home-update-entry{margin:9px 0 12px;padding:15px;box-shadow:none}
+.home-update-entry .itemtitle{display:block;font-size:15px;line-height:1.4;overflow-wrap:anywhere}
+.home-update-entry>p{font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;margin:9px 0 0}
+.update-meta{font-size:12px;font-weight:650;color:#648092;margin-bottom:7px}
+.home-manage{border-top:1px solid #e5ecf1;margin-top:13px;padding-top:7px}
+.home-manage>summary{font-size:12px;color:#42677c;cursor:pointer;padding:6px 0;font-weight:650}
+.home-manage .update-editor{margin:10px 0;border:1px solid #e2ebf1;border-radius:11px;background:#f8fafc;padding:12px}
+.update-editor label{display:block;font-weight:650;font-size:13px;color:#27526b}
+.update-editor input.field,.update-editor textarea.field,.update-editor select.field{font-size:16px}
+.update-editor>button{align-self:flex-start}
+.home-remove{font-size:12px!important;color:#87565d;border-color:#dfc0c4;margin:8px 0 0}
+.home-history{border-top:1px solid #e7eef2;margin:14px 0;padding-top:11px}
+.home-history>summary{cursor:pointer;font-size:12px;font-weight:650;color:#657f8c}
+.home-history .card{background:#fafbfc}
+#updates-notice{margin:14px 0}
