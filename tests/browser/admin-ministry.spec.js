@@ -51,7 +51,7 @@ test("administrator can create ministries, schedule recurring serving and modera
   // Step 2: select a ministry and create a volunteer position.
   await page.locator("#ministryPicker").selectOption({label:ministryName});
   await page.locator('[data-position-form] [name="title"]').fill("Classroom Helper");
-  await page.locator('[data-position-form] button[type="submit"]').click();
+  await page.locator("[data-add-position]").click();
   await expect(page.locator("#serveMessage")).toContainText("Volunteer position added");
   await expect(page.getByText("Classroom Helper",{exact:true})).toBeVisible();
 
@@ -59,7 +59,7 @@ test("administrator can create ministries, schedule recurring serving and modera
   await page.locator('[data-recurring-form] [name="title"]').fill("Weekly Children's Church");
   await page.locator('[data-recurring-form] [name="start"]').fill("09:00");
   await page.locator('[data-recurring-form] [name="end"]').fill("10:00");
-  await page.locator('[data-recurring-form] button[type="submit"]').click();
+  await page.locator("[data-add-recurring]").click();
   await expect(page.locator("#serveMessage")).toContainText("Weekly schedule created");
   await expect(page.locator(".recurring-occurrence")).toHaveCount(5);
 
