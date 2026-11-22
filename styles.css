@@ -55,3 +55,17 @@
 .archived-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0}
 .archived-entry span{font-size:13px}
 .archived-entry button{font-size:12px;padding:8px 11px}
+
+.ministry-picker-label{font-size:13px;display:block;font-weight:700;color:#214c64;margin-top:10px}
+#ministryPicker{font-size:16px;background:white;margin-bottom:14px}
+.recurring-section{border-top:1px solid #e2e9ef;margin-top:14px;padding-top:14px}
+.recurring-section h4{margin:0 0 10px;color:#0c526b;font-size:14px}
+.recurring-card{padding:12px;border-radius:12px;background:#f5fafb;margin:12px 0;border:1px solid #dfeaec}
+.recurring-card>.button-row{margin:12px 0;gap:7px}
+.recurring-card>.button-row .button{font-size:12px;padding:10px}
+.recurring-occurrence{border-top:1px solid #dde8ec;padding:11px 0}
+.recurring-occurrence>strong{display:block;font-size:13px;line-height:1.5}
+.recurring-occurrence>.button{font-size:13px;margin-top:5px}
+.recurring-form{border-top:1px solid #dbe7eb;margin-top:15px;padding-top:12px}
+.recurring-form label{font-size:13px;font-weight:700}
+.recurring-form .field{min-width:0}
