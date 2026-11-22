@@ -121,10 +121,14 @@ function account() {
  ${isAdmin()?'<button class="button" id="reviewBtn">Review Member Requests</button>':''}
  <button class="button outline" id="signOut">Sign Out</button></div>`;
 }
-function more() {
- return `<span class="eyebrow">Church community</span><h1>More</h1>
+function accountPage() {
+ return `<div class="account-page">
  ${accountError ? `<p role="alert" class="error">${escapeHTML(accountError)}</p>` : ""}
  ${user ? (review && isAdmin()? adminView() : account()) : form()}
+ </div>`;
+}
+function more() {
+ return `<span class="eyebrow">Church community</span><h1>More</h1>
  ${givingCard()}
  ${churchInfo()}`;
 }
@@ -138,7 +142,7 @@ function adminView() {
  <button class="button outline" id="backToAccount">Back to Account</button>
  ${list || '<p class="muted">No pending membership requests.</p>'}`;
 }
-const views = {home, prayer, serve, more, notifications, videos};
+const views = {home, prayer, serve, more, notifications, videos, account:accountPage};
 function navigate(next) {
  section = views[next]?next:"home";render();
 }
@@ -158,6 +162,8 @@ function render(){
  navTabs.forEach(b=>b.classList.toggle("active",b.dataset.tab===section));
  const bell=document.getElementById("notificationBell");
  if(bell)bell.classList.toggle("active",section==="notifications");
+ const accountButton=document.getElementById("accountButton");
+ if(accountButton){accountButton.classList.toggle("active",section==="account");accountButton.setAttribute("aria-current",section==="account"?"page":"false");}
  document.title="PMBC — "+section[0].toUpperCase()+section.slice(1);
  screen.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{location.hash=b.dataset.go;}));
  screen.querySelectorAll("[data-authmode]").forEach(b=>b.addEventListener("click",()=>{authMode=b.dataset.authmode;accountError="";render()}));
@@ -228,6 +234,7 @@ async function decide(uid,status) {
 window.addEventListener("hashchange",()=>navigate(location.hash.slice(1)));
 navTabs.forEach(b=>b.addEventListener("click",()=>{location.hash=b.dataset.tab;}));
 document.querySelector("#notificationBell")?.addEventListener("click",()=>{location.hash="notifications";});
+document.querySelector("#accountButton")?.addEventListener("click",()=>{location.hash="account";});
 navigate(location.hash.slice(1));
 onAuthStateChanged(auth,async u=>{accountError="";review=null;await refreshProfile(u);});
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(console.warn));
