@@ -46,7 +46,7 @@ function showShiftTime(value){
  +" · "+new Date(2000,0,1,h,min).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}));
 }
 function shiftEnd(startsAt){
- if(!/^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):(?:00|30)$/.test(startsAt))
+ if(!/^[0-9]{4}-[0-9]{2}-[0-9]{2}T(?:[01][0-9]|2[0-3]):(?:00|30)$/.test(startsAt))
    throw new Error("Choose a start time in 30-minute increments.");
  const start=new Date(startsAt+":00Z");
  if(Number.isNaN(start.getTime())||start.toISOString().slice(0,16)!==startsAt)
@@ -62,7 +62,7 @@ function startOptions(selected="09:00"){
  }).join("");
 }
 function roundedStart(value){
- if(!/^\\d{2}:\\d{2}$/.test(value))return "09:00";
+ if(!/^[0-9]{2}:[0-9]{2}$/.test(value))return "09:00";
  const minutes=Number(value.slice(0,2))*60+Number(value.slice(3));
  const nearest=Math.min(47,Math.max(0,Math.round(minutes/30)));
  return String(Math.floor(nearest/2)).padStart(2,"0")+":"+(nearest%2?"30":"00");
