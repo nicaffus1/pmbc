@@ -69,7 +69,6 @@ function render(){
     '<span class="section-note">Read</span>')+
    (n.linkTab?'<button type="button" class="button outline" data-notification-tab="'+esc(n.linkTab)+'">Open '+esc(n.linkTab)+'</button>':"")+
    (admin?'<details class="notification-manage"><summary>Manage</summary>'+
-    (n.createdBy===uid?'<button type="button" class="button outline" data-notification-send="'+esc(id)+'">Retry phone alert</button>':"")+
     '<button type="button" class="button outline notification-remove" data-notification-remove="'+esc(id)+'">Remove</button></details>':"")+
    '</div></article>';
  }).join(""):'<div class="card empty-update"><p>'+(inboxFilter==="unread"?"No unread notifications.":"No notifications yet.")+'</p></div>';
@@ -102,7 +101,7 @@ async function submit(event){
   if(senderConfigured()){
    try{
     const report=await sendPhonePush(newNotice.id);
-    setMessage("Published to inbox. Phone push: "+report.sent+" accepted, "+report.failed+" failed of "+report.total+" registered devices.");
+    setMessage("Notification sent. "+report.sent+" phone"+(report.sent===1?"":"s")+" accepted the alert"+(report.failed?"; "+report.failed+" failed":"")+".");
    }catch(pushError){
     setMessage("Saved to inbox, but phone delivery didn't finish: "+pushError.message,true);
    }
@@ -140,7 +139,9 @@ async function registerDevice(){
   if(panel)panel.hidden=false;
   const tokenField=root?.querySelector("#pushDeviceToken");
   if(tokenField)tokenField.value=deviceToken;
-  setMessage(result.message);
+  const status=root?.querySelector("#pushSetupStatus");if(status)status.textContent="Phone alerts are enabled on this device.";
+  if(btn)btn.textContent="Refresh phone alerts";
+  setMessage("Phone alerts are enabled on this device.");
  }
  catch(e){setMessage(e.message||"Unable to register for phone alerts.",true);}
  finally{waiting=false;if(btn.isConnected)btn.disabled=false;}
@@ -152,7 +153,7 @@ function checkPushSupport(){
   const status=root.querySelector("#pushSetupStatus");
   if(status)status.textContent=result.reason;
   const btn=root.querySelector("#enablePush");
-  if(btn)btn.disabled=!result.ready;
+  if(btn){btn.disabled=!result.ready;btn.textContent=Notification.permission==="granted"?"Refresh phone alerts":"Enable phone alerts on this device";}
  }).catch(()=>{});
 }
 function click(event){
