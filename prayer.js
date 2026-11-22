@@ -324,14 +324,23 @@ function edit(id){
 }
 function handleClick(e){
  const b=e.target.closest("button");if(!b)return;
- if(b.dataset.prayed){markPrayed(b.dataset.prayed);}
- else if(b.dataset.editPrayer){edit(b.dataset.editPrayer);}
- else if(b.id==="cancelPrayerEdit"){resetEdit();setNotice("");}
+ if(b.dataset.selectPrayer){
+   selectedPrayerId=b.dataset.selectPrayer===selectedPrayerId?"":b.dataset.selectPrayer;
+   drawList();
+ }else if(b.dataset.prayed){
+   markPrayed(b.dataset.prayed);
+ }else if(b.dataset.editPrayer){
+   edit(b.dataset.editPrayer);
+ }else if(b.id==="cancelPrayerEdit"){
+   resetEdit();setNotice("");
+ }
 }
 export function unmountPrayer(){
  session++;
  for(const fn of cleanup){try{fn();}catch{}}
+ for(const stop of totalListeners.values()){try{stop();}catch{}}
  cleanup=[];requestsById=new Map();prayed=new Map();loaded=new Set();errors=[];
+ totalListeners=new Map();prayerTotals=new Map();selectedPrayerId="";
  currentRoot=null;currentUser=null;currentProfile=null;activeEdit=null;busy=false;
 }
 export function mountPrayer(root,user,profile){
@@ -345,6 +354,7 @@ export function mountPrayer(root,user,profile){
  }
  root.innerHTML=baseScreen();
  root.querySelector("#prayerForm").addEventListener("submit",submitPrayer);
+ root.querySelector("#prayerUnspoken").addEventListener("change",toggleUnspoken);
  root.addEventListener("click",handleClick);
  watchFeed();
 }
