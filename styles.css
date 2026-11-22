@@ -30,3 +30,14 @@
 .position-item .button{margin-top:7px;font-size:13px}
 .position-form{border-top:1px solid #dfe9ef;padding-top:16px;margin-top:12px}
 .position-form label{display:block}
+
+/* Dated PMBC volunteer shifts */
+.shift-list{border-top:1px solid #e2ebf1;margin-top:15px;padding-top:12px}
+.shift-list h4{font-size:13px;color:#0b5269;margin:0 0 9px}
+.shift-entry{border:1px solid #e4ebf1;border-radius:12px;padding:12px;margin:9px 0;background:#f9fbfc}
+.shift-entry strong{display:block;font-size:13px;line-height:1.5}
+.shift-entry p{margin:5px 0}
+.shift-entry button{margin-top:9px}
+.shift-form{padding:12px 0;border-top:1px solid #e5ebf1;margin-top:12px}
+.shift-time-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shift-time-row .field{min-width:0}
