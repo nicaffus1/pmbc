@@ -416,3 +416,49 @@
 .share-pmbc-card p{font-size:14px;color:#546e82}
 .share-pmbc-button{margin-top:8px;width:100%;background:#0a6479;font-weight:700}
 .share-pmbc-card .section-note{margin:10px 0 0;font-size:12px}
+
+
+/* Appearance setting: opt-in dark mode; all existing light-mode styles remain unchanged. */
+.appearance-card h2{margin:0 0 8px}
+.theme-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;padding:7px 0}
+.theme-toggle-row strong{display:block;font-size:15px}
+.theme-toggle-row small{display:block;font-size:12px;line-height:1.5;margin-top:3px}
+.theme-toggle-row input{appearance:none;-webkit-appearance:none;flex:none;width:49px;height:29px;border:1px solid #b8cbd4;border-radius:20px;background:#d9e4ea;position:relative;cursor:pointer;transition:background .16s}
+.theme-toggle-row input:before{content:"";position:absolute;left:3px;top:3px;width:21px;height:21px;border-radius:50%;background:white;box-shadow:0 1px 4px #0003;transition:transform .16s}
+.theme-toggle-row input:checked{background:#168f9a;border-color:#168f9a}
+.theme-toggle-row input:checked:before{transform:translateX(20px)}
+.theme-toggle-row input:focus-visible{outline:3px solid #4dd0d9;outline-offset:3px}
+html.dark-mode{color-scheme:dark;background:#0b1420;color:#e3edf5}
+.dark-mode body,.dark-mode .app{background:#101b29;color:#e3edf5}
+.dark-mode .top,.dark-mode .bottom{background:#142336;border-color:#2d455a;box-shadow:none}
+.dark-mode .brand strong,.dark-mode h1,.dark-mode h2,.dark-mode h3,.dark-mode h4,.dark-mode .itemtitle,.dark-mode .tile strong{color:#eef7fc}
+.dark-mode .card,.dark-mode .tile,.dark-mode .video-card,.dark-mode .facebook-post-card,.dark-mode .position-dropdown,.dark-mode .edit-panel,.dark-mode .prayer-list-row,.dark-mode .home-history .card{background:#192a3c;border-color:#344b5e;box-shadow:none;color:#e3edf5}
+.dark-mode .hero{background:linear-gradient(120deg,#183b48,#21324e)}
+.dark-mode .daily-verse{background:linear-gradient(130deg,#172f3b,#212b43);border-color:#365267}
+.dark-mode .daily-verse p,.dark-mode .daily-verse blockquote{color:#e5f2fa}
+.dark-mode .giving-home-link,.dark-mode .notice,.dark-mode .shift-entry,.dark-mode .shift-roster,.dark-mode .admin-expander,.dark-mode .ministry-settings,.dark-mode .ministry-manage-panel,.dark-mode .contact-panel,.dark-mode .notification-composer,.dark-mode .notification-preferences,.dark-mode .notification-entry.read,.dark-mode .notification-entry.unread,.dark-mode .prayer-list-row.selected,.dark-mode .prayer-selected-detail,.dark-mode .empty-update,.dark-mode .facebook-updates-link,.dark-mode .facebook-feed-frame{background:#1b3140;border-color:#385367;color:#e0edf6}
+.dark-mode .home-create .update-editor,.dark-mode .home-manage .update-editor,.dark-mode .position-add-compact>.position-form,.dark-mode .add-shift-control,.dark-mode .position-add-compact>summary{background:#203648;border-color:#39586d;color:#e3edf5}
+.dark-mode .field,.dark-mode input.field,.dark-mode textarea.field,.dark-mode select.field,.dark-mode #ministryPicker,.dark-mode .position-picker,.dark-mode .shift-form select.field,.dark-mode .edit-form select.field{background:#122333;color:#f0f7fc;border-color:#456075}
+.dark-mode .field:disabled{background:#263747;color:#aebfcd}
+.dark-mode input::placeholder,.dark-mode textarea::placeholder{color:#a3b5c4}
+.dark-mode .notification-filter{background:#1a2a3b}
+.dark-mode .notification-filter button.selected{background:#30475b;color:#d9f8fc}
+.dark-mode .notification-bell,.dark-mode .account-header-button,.dark-mode .home-create>summary,.dark-mode .prayer-check,.dark-mode .position-add-compact>summary{background:#243a4d;color:#b2ecf0;border-color:#416478}
+.dark-mode .prayer-check.prayed{background:#1b554c;color:#bbf7df}
+.dark-mode .prayer-person{color:#edf6fb}
+.dark-mode .bottom button{color:#b0c4d3}
+.dark-mode .bottom button.active{color:#79dce3}
+.dark-mode .muted,.dark-mode small,.dark-mode .section-note,.dark-mode .facebook-feed-intro,.dark-mode .facebook-post-meta time,.dark-mode .update-meta,.dark-mode .share-pmbc-card p,.dark-mode .facebook-updates-copy>span{color:#afc5d5}
+.dark-mode .brand span{color:#b7c9d7}
+.dark-mode .eyebrow{color:#83dce0}
+.dark-mode a,.dark-mode .facebook-post-card>a,.dark-mode .facebook-page-link,.dark-mode .contact-email,.dark-mode .video-top-link,.dark-mode .video-more-link,.dark-mode .video-back,.dark-mode .auth-links button,.dark-mode .listlink{color:#8ddce7}
+.dark-mode .listlink{background:#1b2e40;border-color:#37536b}
+.dark-mode .outline,.dark-mode .remove-control{background:#273c4e;color:#dcf6fa;border-color:#4d758b}
+.dark-mode .button:not(.outline){background:#167e91;color:white}
+.dark-mode .pill{background:#23505b;color:#b5f3ed}
+.dark-mode .pill.warning{background:#5a4324;color:#ffe0a3}
+.dark-mode .warning{background:#5a4324;color:#ffe0a3}
+.dark-mode .error{background:#4d2630;border-color:#925160;color:#ffd4db}
+.dark-mode .video-thumbnail,.dark-mode .facebook-post-photos img{background:#293e51}
+.dark-mode .contact-panel>summary,.dark-mode .home-manage>summary,.dark-mode .position-item strong,.dark-mode .prayer-entry strong,.dark-mode .notification-entry strong{color:#e4f2f8}
+.dark-mode .giving-card,.dark-mode .contact-card,.dark-mode .church-info{color:#e4edf5}
