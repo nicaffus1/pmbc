@@ -82,8 +82,12 @@ function form(kind,item=null,id=""){
 }
 function row(kind,id,item){
  const event=kind==="event";
- const heading=event?dateLabel(item.startsAt.slice(0,10))+" · "+fmtTime(item.startsAt.slice(11)):
-  "Until "+dateLabel(item.expiresOn);
+ const heading=event?
+  dateLabel(item.startsAt.slice(0,10))+" · "+fmtTime(item.startsAt.slice(11))+
+  "–"+fmtTime(item.endsAt.slice(11))+
+  (item.endsAt.slice(0,10)!==item.startsAt.slice(0,10)?" (next day)":"")+
+  " CT" :
+  "Shown through "+dateLabel(item.expiresOn);
  return '<article class="card home-update-entry"><div class="update-meta">'+esc(heading)+'</div>'+
   '<strong class="itemtitle">'+esc(item.title)+'</strong>'+
   (item.description?'<p>'+esc(item.description)+'</p>':"")+
