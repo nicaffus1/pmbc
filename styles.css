@@ -20,3 +20,13 @@
 #prayerNotice{margin:10px 0}
 #prayerComposer h2{margin-top:0}
 #prayer-root .pill.warning{background:#fff1dc;color:#784e12}
+
+/* Serve: volunteer position cards */
+.ministry-item h2{margin:0 0 9px}
+.ministry-subtitle{font-size:14px;color:#0b5269;margin:18px 0 8px}
+.position-item{border-top:1px solid #e5ecf1;padding:14px 0}
+.position-item strong{font-size:14px;color:#173c5e}
+.position-item p{font-size:13px}
+.position-item .button{margin-top:7px;font-size:13px}
+.position-form{border-top:1px solid #dfe9ef;padding-top:16px;margin-top:12px}
+.position-form label{display:block}
