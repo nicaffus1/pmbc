@@ -75,8 +75,7 @@ service cloud.firestore {
       // recipientId. Client users cannot create these via Firestore.
       allow get, list: if isAdmin() ||
         (approvedMember() && resource.data.audience == 'members') ||
-        (approvedMember() && resource.data.audience == 'person'
-          && resource.data.recipientId == request.auth.uid);
+        (approvedMember() && resource.data.recipientId == request.auth.uid);
       allow create: if isAdmin()
         && validNotice(request.resource.data)
         && request.resource.data.active == true
