@@ -235,3 +235,25 @@
 .home-history>summary{cursor:pointer;font-size:12px;font-weight:650;color:#657f8c}
 .home-history .card{background:#fafbfc}
 #updates-notice{margin:14px 0}
+
+/* Notification inbox and dedicated header bell. */
+.top{justify-content:space-between}
+.notification-bell{position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:40px;height:40px;border:1px solid #d8e7ec;border-radius:11px;background:#f1f8fa;color:#0b586f;cursor:pointer}
+.notification-bell.active{background:#e0f3f5;border-color:#85c7cf}
+.notification-bell:focus-visible{outline:3px solid #00acb7;outline-offset:2px}
+.notification-dot{position:absolute;top:5px;right:5px;height:8px;width:8px;border-radius:50%;background:#d65d43;border:2px solid #fff}
+.notification-dot[hidden]{display:none}
+.notification-composer{margin:15px 0}
+.notification-composer>summary{cursor:pointer;color:#0b6178;font-weight:700;font-size:14px}
+.notification-composer .stack{margin-top:14px}
+.notification-composer label{font-size:13px;font-weight:600;color:#2c536a}
+.notification-composer select.field,.notification-composer textarea.field,.notification-composer input.field{font-size:16px}
+.notification-entry{margin:10px 0;padding:14px;box-shadow:none}
+.notification-entry.unread{border-left:3px solid #1596a1}
+.notification-entry.read{background:#fafbfc}
+.notification-label{font-size:11px;font-weight:750;letter-spacing:.02em;color:#657e91;margin-bottom:5px}
+.notification-entry strong{font-size:15px;line-height:1.4}
+.notification-entry p{font-size:13px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.notification-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.notification-actions .button{padding:9px 11px;font-size:12px}
+.notification-remove{color:#87545b;border-color:#dec1c5}
