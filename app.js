@@ -1,5 +1,6 @@
 // PMBC live member access. Registration remains disabled until Firestore rules are published.
 import { auth, db } from "./firebase.js";
+import { mountPrayer, unmountPrayer } from "./prayer.js";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification
@@ -32,9 +33,7 @@ function home() {
  <h2>Events</h2>${info("No events available","Nothing has been scheduled yet.")}`;
 }
 function prayer() {
- return `<span class="eyebrow">Community</span><h1>Prayer Wall</h1>
- <div class="notice">${isApproved() ? "Prayer requests will open when the private prayer database and security rules are ready. Please don't submit requests yet." : escapeHTML(signedInMessage())}</div>
- ${!user ? '<button class="button" data-go="more">Member Sign In</button>' : ''}`;
+ return '<div id="prayer-root"></div>';
 }
 function serve() {
  return `<span class="eyebrow">Get involved</span><h1>Serve</h1><p class="muted">Events, ministries and volunteer shifts.</p>
@@ -85,7 +84,9 @@ function navigate(next) {
  section = views[next]?next:"home";render();
 }
 function render(){
+ unmountPrayer();
  screen.innerHTML=views[section]();
+ if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
  navTabs.forEach(b=>b.classList.toggle("active",b.dataset.tab===section));
  document.title="PMBC — "+section[0].toUpperCase()+section.slice(1);
  screen.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{location.hash=b.dataset.go;}));
@@ -130,7 +131,7 @@ async function submitAuth(event) {
  finally{authBusy=false;render();}
 }
 async function refreshProfile(current){
- if(!current){user=null;profile=null;return}
+ if(!current){user=null;profile=null;render();return}
  user=current;
  try {
   const snapshot=await getDoc(doc(db,"users",current.uid));
