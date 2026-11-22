@@ -37,5 +37,5 @@ export async function enablePush(uid){
  await setDoc(doc(db,"users",uid,"pushTokens",id),{
   token,enabled:true,platform:"web",updatedAt:serverTimestamp()
  },{merge:true});
- return "This device is registered for PMBC push alerts.";
+ return {message:"This device is ready for manual Firebase push alerts.",token};
 }
