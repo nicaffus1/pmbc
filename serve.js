@@ -45,6 +45,28 @@ function showShiftTime(value){
  return esc(new Date(y,m-1,d).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})
  +" · "+new Date(2000,0,1,h,min).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}));
 }
+function shiftEnd(startsAt){
+ if(!/^\\d{4}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3]):(?:00|30)$/.test(startsAt))
+   throw new Error("Choose a start time in 30-minute increments.");
+ const start=new Date(startsAt+":00Z");
+ if(Number.isNaN(start.getTime())||start.toISOString().slice(0,16)!==startsAt)
+   throw new Error("Choose a valid date and start time.");
+ return new Date(start.getTime()+3600000).toISOString().slice(0,16);
+}
+function startOptions(selected="09:00"){
+ return Array.from({length:48},(_,i)=>{
+  const time=String(Math.floor(i/2)).padStart(2,"0")+":"+(i%2?"30":"00");
+  const label=new Date(2000,0,1,Math.floor(i/2),i%2?30:0)
+   .toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+  return `<option value="${time}" ${time===selected?"selected":""}>${label}</option>`;
+ }).join("");
+}
+function roundedStart(value){
+ if(!/^\\d{2}:\\d{2}$/.test(value))return "09:00";
+ const minutes=Number(value.slice(0,2))*60+Number(value.slice(3));
+ const nearest=Math.min(47,Math.max(0,Math.round(minutes/30)));
+ return String(Math.floor(nearest/2)).padStart(2,"0")+":"+(nearest%2?"30":"00");
+}
 function shiftList(mid,pid){
  const list=[...(shifts.get(positionKey(mid,pid))?.values()||[])].filter(x=>x.active)
    .sort((a,b)=>a.startsAt.localeCompare(b.startsAt));
@@ -76,6 +98,20 @@ function shiftList(mid,pid){
     ${admin()?`<details class="manage-menu" data-panel="manage-shift:${esc(mid)}:${esc(pid)}:${esc(x.id)}">
       <summary>Manage this shift</summary>
       <div class="manage-menu-body">
+        <details class="edit-panel" data-panel="edit-shift:${esc(mid)}:${esc(pid)}:${esc(x.id)}">
+          <summary>Edit shift</summary>
+          <form class="stack edit-form" data-edit-shift-form data-mid="${esc(mid)}"
+            data-pid="${esc(pid)}" data-sid="${esc(x.id)}">
+            <label>Shift date
+              <input class="field" type="date" name="date" value="${esc(x.startsAt.slice(0,10))}" required></label>
+            <label>Start time
+              <select class="field" name="start" required>${startOptions(roundedStart(x.startsAt.slice(11,16)))}</select></label>
+            <p class="section-note">Duration: 1 hour automatically.</p>
+            <label>Notes (optional)
+              <input class="field" name="notes" maxlength="300" value="${esc(x.notes||"")}"></label>
+            <button class="button" type="submit">Save changes</button>
+          </form>
+        </details>
         ${visibility!=="members"?`<button type="button" class="button outline roster-share"
           data-share-roster data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}">
           Share volunteer names with members</button>`:""}
@@ -91,13 +127,12 @@ function shiftList(mid,pid){
   ${admin()?`<details class="admin-expander add-shift-control" data-panel="shift:${esc(mid)}:${esc(pid)}"><summary>+ Add a shift</summary>
   <form class="stack shift-form" data-shift-form data-mid="${esc(mid)}" data-pid="${esc(pid)}">
     <label>Shift date<input class="field" name="date" type="date" required></label>
-    <div class="shift-time-row">
-      <label>Start time<input class="field" name="start" type="time" required></label>
-      <label>End time<input class="field" name="end" type="time" required></label>
-    </div>
+    <label>Start time
+      <select class="field" name="start" required>${startOptions()}</select>
+    </label>
     <label>Notes (optional)<input class="field" name="notes" maxlength="300"></label>
     <p class="section-note">Volunteer names are visible to all approved members and administrators.</p>
-    <p class="section-note">Times are Central Time. Each shift starts and ends on the same day.</p>
+    <p class="section-note">Every shift lasts one hour. Choose a start time in 30-minute steps (Central Time).</p>
     <button class="button outline" type="submit">Save Shift</button>
   </form></details>`:""}
   ${admin()?archivedShiftsUI(mid,pid):""}
@@ -198,6 +233,16 @@ function positionUI(mid,entry){
   ${admin()?`<details class="manage-menu position-manage" data-panel="manage-position:${esc(mid)}:${esc(id)}">
    <summary>Manage this position</summary>
    <div class="manage-menu-body">
+    <details class="edit-panel" data-panel="edit-position:${esc(mid)}:${esc(id)}">
+      <summary>Edit position</summary>
+      <form class="stack edit-form" data-edit-position-form data-mid="${esc(mid)}" data-pid="${esc(id)}">
+        <label>Position name
+          <input class="field" name="title" minlength="2" maxlength="80" value="${esc(data.title)}" required></label>
+        <label>Description (optional)
+          <textarea class="field" name="description" rows="3" maxlength="500">${esc(data.description||"")}</textarea></label>
+        <button class="button" type="submit">Save changes</button>
+      </form>
+    </details>
     <button type="button" class="button outline remove-control"
      data-archive-item="position" data-mid="${esc(mid)}" data-pid="${esc(id)}">Remove this position</button>
    </div>
@@ -339,14 +384,12 @@ async function addShift(event){
  if(!ministries.get(mid)?.active||!positions.get(mid)?.get(pid)?.active)return;
  const date=form.elements.namedItem("date").value;
  const start=form.elements.namedItem("start").value;
- const end=form.elements.namedItem("end").value;
  const notes=form.elements.namedItem("notes").value.trim();
- const startsAt=date+"T"+start, endsAt=date+"T"+end;
- const validDateTime=new RegExp("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$");
- if(!validDateTime.test(startsAt)||!validDateTime.test(endsAt)
-   ||endsAt<=startsAt||notes.length>300){
-   notice("Enter a valid date and a later end time on the same day.",true);return;
- }
+ const startsAt=date+"T"+start;
+ let endsAt;
+ try{endsAt=shiftEnd(startsAt);}
+ catch(error){notice(error.message,true);return;}
+ if(notes.length>300){notice("Notes must be 300 characters or fewer.",true);return;}
  const button=form.querySelector("[type=submit]");button.disabled=true;
  try{
    await addDoc(collection(db,"ministries",mid,"positions",pid,"shifts"),{
