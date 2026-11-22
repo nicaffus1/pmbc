@@ -9,7 +9,7 @@ import {
   where, getDocs, updateDoc
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
-const REGISTRATION_ENABLED = false; // Safety switch: enable only AFTER Firestore security rules are published.
+const REGISTRATION_ENABLED = true; // Enabled after the owner confirmed secure Firestore rules were published.
 const screen = document.getElementById("screen");
 const navTabs = [...document.querySelectorAll("[data-tab]")];
 let user = null, profile = null, accountError = "", authBusy = false;
