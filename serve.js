@@ -66,23 +66,29 @@ function shiftList(mid,pid){
     <strong>${showShiftTime(x.startsAt)} to ${showShiftTime(x.endsAt).split(" · ").pop()} CT</strong>
     ${x.notes?`<p>${esc(x.notes)}</p>`:""}
     ${rosterMarkup}
-    ${admin()?`<button type="button" class="button outline remove-control"
-      data-archive-item="shift" data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}">
-      Remove Shift</button>`:""}
-    ${admin()&&visibility!=="members"?`<button type="button" class="button outline roster-share"
-      data-share-roster data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}">
-      Share volunteer names with members</button>`:""}
-    <button class="button ${signed?"outline":""}" type="button" data-toggle-shift
-      data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}"
-      ${pendingWrites.has("shift:"+key)||(!signed&&past)?"disabled":""}>
-      ${signed?"✓ Signed Up — Cancel Shift":past?"Shift Ended":"Sign Up for Shift"}
-    </button>
+    <div class="shift-primary-actions">
+      <button class="button ${signed?"outline":""}" type="button" data-toggle-shift
+        data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}"
+        ${pendingWrites.has("shift:"+key)||(!signed&&past)?"disabled":""}>
+        ${signed?"✓ Signed Up — Cancel Shift":past?"Shift Ended":"Sign Up for Shift"}
+      </button>
+    </div>
+    ${admin()?`<details class="manage-menu" data-panel="manage-shift:${esc(mid)}:${esc(pid)}:${esc(x.id)}">
+      <summary>Manage this shift</summary>
+      <div class="manage-menu-body">
+        ${visibility!=="members"?`<button type="button" class="button outline roster-share"
+          data-share-roster data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}">
+          Share volunteer names with members</button>`:""}
+        <button type="button" class="button outline remove-control"
+          data-archive-item="shift" data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}">
+          Remove this shift</button>
+      </div>
+    </details>`:""}
   </div>`;
  }).join("");
  return `<div class="shift-list"><h4>Scheduled Shifts</h4>
   ${rows||'<p class="muted">No scheduled shifts yet.</p>'}
-  ${admin()?archivedShiftsUI(mid,pid):""}
-  ${admin()?`<details class="admin-expander" data-panel="shift:${esc(mid)}:${esc(pid)}"><summary>Add a Shift</summary>
+  ${admin()?`<details class="admin-expander add-shift-control" data-panel="shift:${esc(mid)}:${esc(pid)}"><summary>+ Add a shift</summary>
   <form class="stack shift-form" data-shift-form data-mid="${esc(mid)}" data-pid="${esc(pid)}">
     <label>Shift date<input class="field" name="date" type="date" required></label>
     <div class="shift-time-row">
@@ -94,6 +100,7 @@ function shiftList(mid,pid){
     <p class="section-note">Times are Central Time. Each shift starts and ends on the same day.</p>
     <button class="button outline" type="submit">Save Shift</button>
   </form></details>`:""}
+  ${admin()?archivedShiftsUI(mid,pid):""}
  </div>`;
 }
 function watchShiftRoster(mid,pid,shift,token){
@@ -189,7 +196,12 @@ function positionUI(mid,entry){
   <strong>${esc(data.title)}</strong>
   ${data.description?`<p>${esc(data.description)}</p>`:""}
   ${shiftList(mid,id)}
-  ${admin()?`<button type="button" class="button outline remove-control" data-archive-item="position" data-mid="${esc(mid)}" data-pid="${esc(id)}">Remove Position</button>`:""}
+  ${admin()?`<details class="manage-menu position-manage" data-panel="manage-position:${esc(mid)}:${esc(id)}">
+   <summary>Manage volunteer position</summary>
+   <div class="manage-menu-body">
+    <button type="button" class="button outline remove-control" data-archive-item="position" data-mid="${esc(mid)}" data-pid="${esc(id)}">Remove this position</button>
+   </div>
+  </details>`:""}
  </div>`;
 }
 function ministryUI(entry){
@@ -198,19 +210,30 @@ function ministryUI(entry){
    .sort((a,b)=>a.title.localeCompare(b.title));
  return `<article class="card ministry-item compact-ministry">
   ${items.length?items.map(p=>positionUI(id,p)).join(""):'<p class="muted">No volunteer positions yet.</p>'}
-  ${admin()?archivedPositionsUI(id):""}
-  ${admin()?`<details class="admin-expander" data-panel="position:${esc(id)}"><summary>Add a Volunteer Position</summary>
-  <form class="stack position-form" data-position-form data-mid="${esc(id)}">
-   <label>New volunteer position
-    <input class="field" name="title" minlength="2" maxlength="80" required
-     placeholder="e.g. Classroom Helper"></label>
-   <label>Description (optional)
-    <textarea class="field" name="description" maxlength="500" rows="2"
-     placeholder="What will a volunteer do?"></textarea></label>
-   <button class="button outline" type="submit">Save Position</button>
-  </form></details>`:""}
-  ${admin()?`<button type="button" class="button outline remove-control remove-ministry"
-   data-archive-item="ministry" data-mid="${esc(id)}">Remove Ministry</button>`:""}
+  ${admin()?`<section class="ministry-admin-tools" aria-label="Ministry administration">
+    <div class="admin-tools-heading">Ministry Administration</div>
+    <details class="admin-expander" data-panel="position:${esc(id)}">
+      <summary>Add a volunteer position</summary>
+      <form class="stack position-form" data-position-form data-mid="${esc(id)}">
+        <label>Position name
+          <input class="field" name="title" minlength="2" maxlength="80" required
+            placeholder="e.g. Classroom Helper"></label>
+        <label>Description (optional)
+          <textarea class="field" name="description" maxlength="500" rows="2"
+            placeholder="What will a volunteer do?"></textarea></label>
+        <button class="button" type="submit">Save Position</button>
+      </form>
+    </details>
+    <details class="manage-menu ministry-manage" data-panel="manage-ministry:${esc(id)}">
+      <summary>Manage this ministry</summary>
+      <div class="manage-menu-body">
+        <p class="section-note">Removing a ministry hides its positions and shifts. All records are preserved.</p>
+        <button type="button" class="button outline remove-control"
+          data-archive-item="ministry" data-mid="${esc(id)}">Remove this ministry</button>
+      </div>
+    </details>
+    ${archivedPositionsUI(id)}
+  </section>`:""}
  </article>`;
 }
 function draw(){
