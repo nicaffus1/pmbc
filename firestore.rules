@@ -156,6 +156,325 @@ service cloud.firestore {
           && request.resource.data.active is bool;
         allow delete: if false;
 
+        match /recurring/{scheduleId} {
+          allow get, list: if approvedMember();
+          allow create: if isAdmin()
+            && exists(/databases/$(database)/documents/ministries/$(ministryId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)).data.active == true
+            && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)).data.active == true
+            && request.resource.data.keys().hasOnly([
+              'title','weekday','startTime','endTime','notes','rosterVisibility','active','createdBy','createdAt'
+            ])
+            && request.resource.data.keys().hasAll([
+              'title','weekday','startTime','endTime','notes','rosterVisibility','active','createdBy','createdAt'
+            ])
+            && request.resource.data.title is string
+            && request.resource.data.title.size() >= 2
+            && request.resource.data.title.size() <= 80
+            && request.resource.data.weekday is int
+            && request.resource.data.weekday >= 0
+            && request.resource.data.weekday <= 6
+            && request.resource.data.startTime is string
+            && request.resource.data.startTime.matches('^[0-9]{2}:[0-9]{2}
+          allow get, list: if approvedMember();
+
+          allow create: if isAdmin()
+            && exists(/databases/$(database)/documents/ministries/$(ministryId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)).data.active == true
+            && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)).data.active == true
+            && request.resource.data.keys().hasOnly([
+              'startsAt','endsAt','timeZone','notes','active','createdBy','createdAt','rosterVisibility'
+            ])
+            && request.resource.data.keys().hasAll([
+              'startsAt','endsAt','timeZone','notes','active','createdBy','createdAt','rosterVisibility'
+            ])
+            && request.resource.data.startsAt is string
+            && request.resource.data.startsAt.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$')
+            && request.resource.data.endsAt is string
+            && request.resource.data.endsAt.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$')
+            && request.resource.data.endsAt > request.resource.data.startsAt
+            && request.resource.data.timeZone == 'America/Chicago'
+            && request.resource.data.rosterVisibility in ['members', 'admins']
+            && request.resource.data.notes is string
+            && request.resource.data.notes.size() <= 300
+            && request.resource.data.active == true
+            && request.resource.data.createdBy == request.auth.uid
+            && request.resource.data.createdAt == request.time;
+          // Only admins may change roster visibility after publication.
+          allow update: if isAdmin()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rosterVisibility'])
+            && request.resource.data.rosterVisibility in ['members','admins'];
+          allow delete: if false;
+
+          match /signups/{memberId} {
+            allow get: if approvedMember()
+              && (request.auth.uid == memberId || isAdmin());
+            // Existing shifts without this field default to member-visible.
+            // A whole-roster query is permitted only for the configured audience.
+            allow list: if approvedMember()
+              && (isAdmin()
+                || !('rosterVisibility' in get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/shifts/$(shiftId)).data)
+                || get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/shifts/$(shiftId)).data.rosterVisibility == 'members');
+            allow create: if approvedMember()
+              && request.auth.uid == memberId
+              && exists(/databases/$(database)/documents/ministries/$(ministryId))
+              && get(/databases/$(database)/documents/ministries/$(ministryId)).data.active == true
+              && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId))
+              && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)).data.active == true
+              && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/shifts/$(shiftId))
+              && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/shifts/$(shiftId)).data.active == true
+              && request.resource.data.keys().hasOnly(['memberId','memberName','createdAt'])
+              && request.resource.data.keys().hasAll(['memberId','memberName','createdAt'])
+              && request.resource.data.memberId == request.auth.uid
+              && request.resource.data.memberName == get(userPath(request.auth.uid)).data.displayName
+              && request.resource.data.createdAt == request.time;
+            allow delete: if approvedMember() && request.auth.uid == memberId;
+            allow update: if false;
+          }
+        }
+
+        match /signups/{memberId} {
+          // A volunteer can view only their own signup; admins may review all.
+          allow get: if approvedMember()
+            && (request.auth.uid == memberId || isAdmin());
+          allow list: if isAdmin();
+          allow create: if approvedMember()
+            && request.auth.uid == memberId
+            && exists(/databases/$(database)/documents/ministries/$(ministryId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)).data.active == true
+            && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)).data.active == true
+            && request.resource.data.keys().hasOnly(['memberId','memberName','createdAt'])
+            && request.resource.data.keys().hasAll(['memberId','memberName','createdAt'])
+            && request.resource.data.memberId == request.auth.uid
+            && request.resource.data.memberName == get(userPath(request.auth.uid)).data.displayName
+            && request.resource.data.createdAt == request.time;
+          allow delete: if approvedMember() && request.auth.uid == memberId;
+          allow update: if false;
+        }
+      }
+    }
+
+    // No access to other collections until they have dedicated rules.
+    match /{document=**} { allow read, write: if false; }
+  }
+}
+)
+            && request.resource.data.endTime is string
+            && request.resource.data.endTime.matches('^[0-9]{2}:[0-9]{2}
+          allow get, list: if approvedMember();
+
+          allow create: if isAdmin()
+            && exists(/databases/$(database)/documents/ministries/$(ministryId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)).data.active == true
+            && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)).data.active == true
+            && request.resource.data.keys().hasOnly([
+              'startsAt','endsAt','timeZone','notes','active','createdBy','createdAt','rosterVisibility'
+            ])
+            && request.resource.data.keys().hasAll([
+              'startsAt','endsAt','timeZone','notes','active','createdBy','createdAt','rosterVisibility'
+            ])
+            && request.resource.data.startsAt is string
+            && request.resource.data.startsAt.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$')
+            && request.resource.data.endsAt is string
+            && request.resource.data.endsAt.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$')
+            && request.resource.data.endsAt > request.resource.data.startsAt
+            && request.resource.data.timeZone == 'America/Chicago'
+            && request.resource.data.rosterVisibility in ['members', 'admins']
+            && request.resource.data.notes is string
+            && request.resource.data.notes.size() <= 300
+            && request.resource.data.active == true
+            && request.resource.data.createdBy == request.auth.uid
+            && request.resource.data.createdAt == request.time;
+          // Only admins may change roster visibility after publication.
+          allow update: if isAdmin()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rosterVisibility'])
+            && request.resource.data.rosterVisibility in ['members','admins'];
+          allow delete: if false;
+
+          match /signups/{memberId} {
+            allow get: if approvedMember()
+              && (request.auth.uid == memberId || isAdmin());
+            // Existing shifts without this field default to member-visible.
+            // A whole-roster query is permitted only for the configured audience.
+            allow list: if approvedMember()
+              && (isAdmin()
+                || !('rosterVisibility' in get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/shifts/$(shiftId)).data)
+                || get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/shifts/$(shiftId)).data.rosterVisibility == 'members');
+            allow create: if approvedMember()
+              && request.auth.uid == memberId
+              && exists(/databases/$(database)/documents/ministries/$(ministryId))
+              && get(/databases/$(database)/documents/ministries/$(ministryId)).data.active == true
+              && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId))
+              && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)).data.active == true
+              && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/shifts/$(shiftId))
+              && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/shifts/$(shiftId)).data.active == true
+              && request.resource.data.keys().hasOnly(['memberId','memberName','createdAt'])
+              && request.resource.data.keys().hasAll(['memberId','memberName','createdAt'])
+              && request.resource.data.memberId == request.auth.uid
+              && request.resource.data.memberName == get(userPath(request.auth.uid)).data.displayName
+              && request.resource.data.createdAt == request.time;
+            allow delete: if approvedMember() && request.auth.uid == memberId;
+            allow update: if false;
+          }
+        }
+
+        match /signups/{memberId} {
+          // A volunteer can view only their own signup; admins may review all.
+          allow get: if approvedMember()
+            && (request.auth.uid == memberId || isAdmin());
+          allow list: if isAdmin();
+          allow create: if approvedMember()
+            && request.auth.uid == memberId
+            && exists(/databases/$(database)/documents/ministries/$(ministryId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)).data.active == true
+            && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)).data.active == true
+            && request.resource.data.keys().hasOnly(['memberId','memberName','createdAt'])
+            && request.resource.data.keys().hasAll(['memberId','memberName','createdAt'])
+            && request.resource.data.memberId == request.auth.uid
+            && request.resource.data.memberName == get(userPath(request.auth.uid)).data.displayName
+            && request.resource.data.createdAt == request.time;
+          allow delete: if approvedMember() && request.auth.uid == memberId;
+          allow update: if false;
+        }
+      }
+    }
+
+    // No access to other collections until they have dedicated rules.
+    match /{document=**} { allow read, write: if false; }
+  }
+}
+)
+            && request.resource.data.endTime > request.resource.data.startTime
+            && request.resource.data.notes is string
+            && request.resource.data.notes.size() <= 300
+            && request.resource.data.rosterVisibility in ['members','admins']
+            && request.resource.data.active == true
+            && request.resource.data.createdBy == request.auth.uid
+            && request.resource.data.createdAt == request.time;
+
+          // Archive a recurring schedule without deleting historical signups.
+          allow update: if isAdmin()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['active'])
+            && request.resource.data.active is bool;
+          allow delete: if false;
+
+          match /dates/{date}/members/{memberId} {
+            allow get: if approvedMember()
+              && (request.auth.uid == memberId || isAdmin()
+                  || get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/recurring/$(scheduleId)).data.rosterVisibility == 'members');
+            allow list: if approvedMember()
+              && (isAdmin()
+                || get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/recurring/$(scheduleId)).data.rosterVisibility == 'members');
+            allow create: if approvedMember()
+              && request.auth.uid == memberId
+              && date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}
+          allow get, list: if approvedMember();
+
+          allow create: if isAdmin()
+            && exists(/databases/$(database)/documents/ministries/$(ministryId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)).data.active == true
+            && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)).data.active == true
+            && request.resource.data.keys().hasOnly([
+              'startsAt','endsAt','timeZone','notes','active','createdBy','createdAt','rosterVisibility'
+            ])
+            && request.resource.data.keys().hasAll([
+              'startsAt','endsAt','timeZone','notes','active','createdBy','createdAt','rosterVisibility'
+            ])
+            && request.resource.data.startsAt is string
+            && request.resource.data.startsAt.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$')
+            && request.resource.data.endsAt is string
+            && request.resource.data.endsAt.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}$')
+            && request.resource.data.endsAt > request.resource.data.startsAt
+            && request.resource.data.timeZone == 'America/Chicago'
+            && request.resource.data.rosterVisibility in ['members', 'admins']
+            && request.resource.data.notes is string
+            && request.resource.data.notes.size() <= 300
+            && request.resource.data.active == true
+            && request.resource.data.createdBy == request.auth.uid
+            && request.resource.data.createdAt == request.time;
+          // Only admins may change roster visibility after publication.
+          allow update: if isAdmin()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rosterVisibility'])
+            && request.resource.data.rosterVisibility in ['members','admins'];
+          allow delete: if false;
+
+          match /signups/{memberId} {
+            allow get: if approvedMember()
+              && (request.auth.uid == memberId || isAdmin());
+            // Existing shifts without this field default to member-visible.
+            // A whole-roster query is permitted only for the configured audience.
+            allow list: if approvedMember()
+              && (isAdmin()
+                || !('rosterVisibility' in get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/shifts/$(shiftId)).data)
+                || get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/shifts/$(shiftId)).data.rosterVisibility == 'members');
+            allow create: if approvedMember()
+              && request.auth.uid == memberId
+              && exists(/databases/$(database)/documents/ministries/$(ministryId))
+              && get(/databases/$(database)/documents/ministries/$(ministryId)).data.active == true
+              && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId))
+              && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)).data.active == true
+              && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/shifts/$(shiftId))
+              && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/shifts/$(shiftId)).data.active == true
+              && request.resource.data.keys().hasOnly(['memberId','memberName','createdAt'])
+              && request.resource.data.keys().hasAll(['memberId','memberName','createdAt'])
+              && request.resource.data.memberId == request.auth.uid
+              && request.resource.data.memberName == get(userPath(request.auth.uid)).data.displayName
+              && request.resource.data.createdAt == request.time;
+            allow delete: if approvedMember() && request.auth.uid == memberId;
+            allow update: if false;
+          }
+        }
+
+        match /signups/{memberId} {
+          // A volunteer can view only their own signup; admins may review all.
+          allow get: if approvedMember()
+            && (request.auth.uid == memberId || isAdmin());
+          allow list: if isAdmin();
+          allow create: if approvedMember()
+            && request.auth.uid == memberId
+            && exists(/databases/$(database)/documents/ministries/$(ministryId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)).data.active == true
+            && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId))
+            && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)).data.active == true
+            && request.resource.data.keys().hasOnly(['memberId','memberName','createdAt'])
+            && request.resource.data.keys().hasAll(['memberId','memberName','createdAt'])
+            && request.resource.data.memberId == request.auth.uid
+            && request.resource.data.memberName == get(userPath(request.auth.uid)).data.displayName
+            && request.resource.data.createdAt == request.time;
+          allow delete: if approvedMember() && request.auth.uid == memberId;
+          allow update: if false;
+        }
+      }
+    }
+
+    // No access to other collections until they have dedicated rules.
+    match /{document=**} { allow read, write: if false; }
+  }
+}
+)
+              && exists(/databases/$(database)/documents/ministries/$(ministryId))
+              && get(/databases/$(database)/documents/ministries/$(ministryId)).data.active == true
+              && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId))
+              && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)).data.active == true
+              && exists(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/recurring/$(scheduleId))
+              && get(/databases/$(database)/documents/ministries/$(ministryId)/positions/$(positionId)/recurring/$(scheduleId)).data.active == true
+              && request.resource.data.keys().hasOnly(['memberId','memberName','occurrenceDate','createdAt'])
+              && request.resource.data.keys().hasAll(['memberId','memberName','occurrenceDate','createdAt'])
+              && request.resource.data.memberId == request.auth.uid
+              && request.resource.data.memberName == get(userPath(request.auth.uid)).data.displayName
+              && request.resource.data.occurrenceDate == date
+              && request.resource.data.createdAt == request.time;
+            allow delete: if approvedMember() && request.auth.uid == memberId;
+            allow update: if false;
+          }
+        }
+
         match /shifts/{shiftId} {
           allow get, list: if approvedMember();
 
