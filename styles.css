@@ -205,3 +205,8 @@
 .prayer-unspoken-label{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px}
 .prayer-unspoken-label input{width:19px;height:19px;accent-color:#0b7c88}
 @media(max-width:380px){.prayer-count{font-size:10px}.prayer-person{padding-left:10px}.prayer-check{flex-basis:47px}}
+
+/* Put prayer request submission above the prayer names; preserve compact layout. */
+#prayer-root .prayer-composer{margin:15px 0 19px}
+#prayer-root .prayer-list-guidance{font-size:12px;color:#637c8c;margin:0 0 12px;line-height:1.5}
+#prayer-root .prayer-check.prayed:disabled{opacity:1;cursor:default}
