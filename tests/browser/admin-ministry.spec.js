@@ -5,8 +5,8 @@ import {initializeTestEnvironment} from "@firebase/rules-unit-testing";
 import {setDoc,doc} from "firebase/firestore";
 import {readFileSync} from "node:fs";
 
-test("administrator can create a ministry on a phone, view it and reload",async({page})=>{
- const email="admin-ui@pmbc.test",password="TestOnly12345!";
+test("administrator can create a ministry on a phone, view it and reload",async({page},testInfo)=>{
+ const email="admin-ui-"+testInfo.project.name+"@pmbc.test",password="TestOnly12345!";
  const response=await fetch("http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-key",{
   method:"POST",
   headers:{"Content-Type":"application/json"},
