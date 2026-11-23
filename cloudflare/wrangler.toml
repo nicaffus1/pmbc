@@ -14,3 +14,6 @@ previews = { }
 # Keep the private FACEBOOK_PAGE_ACCESS_TOKEN in Cloudflare Secrets, never here.
 [vars]
 FACEBOOK_PAGE_ID = "108415754146503"
+
+# Allow Cloudflare Workers Builds to deploy isolated pull-request previews.
+[previews]
