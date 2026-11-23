@@ -68,6 +68,16 @@ function roundedStart(value){
  const nearest=Math.min(47,Math.max(0,Math.round(minutes/30)));
  return String(Math.floor(nearest/2)).padStart(2,"0")+":"+(nearest%2?"30":"00");
 }
+function shiftCalendarUrl(shift){
+ const dates=(shift.startsAt.replace(/[-:]/g,"")+"00")+"/"+(shift.endsAt.replace(/[-:]/g,"")+"00");
+ const params=new URLSearchParams({
+  action:"TEMPLATE",text:"Providence Church — Volunteer Shift",dates,
+  ctz:"America/Chicago",
+  details:"You signed up to serve at Providence Missionary Baptist Church.",
+  location:"Providence Missionary Baptist Church, 1129 CR 1265, Center, TX"
+ });
+ return "https://calendar.google.com/calendar/render?"+params.toString();
+}
 function shiftList(mid,pid){
  const list=[...(shifts.get(positionKey(mid,pid))?.values()||[])].filter(x=>x.active && x.endsAt>chicagoNow())
    .sort((a,b)=>a.startsAt.localeCompare(b.startsAt));
@@ -93,12 +103,14 @@ function shiftList(mid,pid){
     ${x.notes?`<p>${esc(x.notes)}</p>`:""}
     <div class="shift-capacity ${full?"is-full":""}">${limit?`<strong>${full?"Shift Full":Math.max(0,limit-used)+" of "+limit+" spots open"}</strong><span>${used} signed up</span>`:"<span>Open volunteer sign-up</span>"}</div>
     ${rosterMarkup}
+    ${signed?`<a class="calendar-shift-link" href="${esc(shiftCalendarUrl(x))}" target="_blank" rel="noopener noreferrer">Add to Google Calendar ↗</a>`:""}
     <div class="shift-primary-actions">
       <button class="button ${signed?"outline":""}" type="button" data-toggle-shift
         data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}"
         ${pendingWrites.has("shift:"+key)||(!signed&&(past||full))?"disabled":""}>
         ${signed?"✓ Signed Up — Cancel Shift":past?"Shift Ended":full?"Shift Full":"Sign Up for Shift"}
       </button>
+      ${signed?`<button class="button outline" type="button" data-calendar-shift data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}">Add to Calendar</button>`:""}
     </div>
     ${admin()?`<details class="manage-menu" data-panel="manage-shift:${esc(mid)}:${esc(pid)}:${esc(x.id)}">
       <summary>Manage this shift</summary>
@@ -644,6 +656,43 @@ async function setArchived(type,mid,pid,sid,archive){
  }finally{pendingWrites.delete(key);}
 }
 
+function foldCalendarLine(line){
+ const encoder=new TextEncoder();
+ let folded="", width=0;
+ for(const char of line){
+  const bytes=encoder.encode(char).length;
+  if(width+bytes>75){folded+="\r\n ";width=1;}
+  folded+=char;
+  width+=bytes;
+ }
+ return folded;
+}
+
+function downloadShiftCalendar(button){
+ const {mid,pid,sid}=button.dataset;
+ const shift=shifts.get(positionKey(mid,pid))?.get(sid);
+ const position=positions.get(mid)?.get(pid);
+ if(!shift||!shiftJoined.get(shiftKey(mid,pid,sid)))return;
+ const line=value=>String(value||"").replace(/\\/g,"\\\\").replace(/\r?\n/g,"\\n").replace(/[,;]/g,c=>"\\"+c);
+ const date=value=>value.replace(/[-:]/g,"")+"00";
+ const summary=line((position?.title||"Volunteer Shift")+" — Providence");
+ const description="Providence Church volunteer shift";
+ const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
+ const content=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//PMBC//Volunteer Shifts//EN","BEGIN:VTIMEZONE","TZID:America/Chicago",
+  "BEGIN:DAYLIGHT","DTSTART:20070311T020000","RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU",
+  "TZOFFSETFROM:-0600","TZOFFSETTO:-0500","END:DAYLIGHT",
+  "BEGIN:STANDARD","DTSTART:20071104T020000","RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU",
+  "TZOFFSETFROM:-0500","TZOFFSETTO:-0600","END:STANDARD","END:VTIMEZONE","BEGIN:VEVENT",
+  "UID:"+[mid,pid,sid].map(encodeURIComponent).join(".")+"@pmbc.local","DTSTAMP:"+stamp,
+  "DTSTART;TZID=America/Chicago:"+date(shift.startsAt),
+  "DTEND;TZID=America/Chicago:"+date(shift.endsAt),
+  "SUMMARY:"+summary,"DESCRIPTION:"+description,"END:VEVENT","END:VCALENDAR",""].map(foldCalendarLine).join("\r\n");
+ const url=URL.createObjectURL(new Blob([content],{type:"text/calendar;charset=utf-8"}));
+ const a=document.createElement("a");a.href=url;a.download="providence-volunteer-shift.ics";
+ document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),30000);
+ notice("Calendar file created. Open it to add the shift to your calendar.");
+}
 function onClick(event){
  const removeButton=event.target.closest("[data-archive-item]");
  if(removeButton){
@@ -655,6 +704,8 @@ function onClick(event){
    const {mid,pid,sid,restoreItem}=restoreButton.dataset;
    setArchived(restoreItem,mid,pid,sid,false);return;
  }
+ const calendar=event.target.closest("[data-calendar-shift]");
+ if(calendar){downloadShiftCalendar(calendar);return;}
  const share=event.target.closest("[data-share-roster]");
  if(share){shareRoster(share);return;}
  const shiftButton=event.target.closest("[data-toggle-shift]");
