@@ -1,0 +1,41 @@
+name: Verify Providence App
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript module syntax
+        shell: bash
+        run: |
+          for file in app.js bulletin.js resource-hub.js answered-prayers.js member-directory.js help-board.js care-board.js serve.js prayer.js home-updates.js notifications.js videos.js firebase.js facebook-posts.js service-worker.js; do
+            echo "Checking $file"
+            node --input-type=module --check < "$file"
+          done
+      - name: Check HTML references and Firestore source structure
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          page = Path('index.html').read_text()
+          for file in ('app.js','styles.css','features.css','service-worker.js','firestore.rules'):
+              assert Path(file).exists(), file
+          imports = re.findall(r'from\s+["\'](\./[^"\']+)["\']',Path('app.js').read_text())
+          for file in imports:
+              assert Path(file.removeprefix('./')).exists(), file
+          rules = Path('firestore.rules').read_text()
+          assert rules.count('match /{document=**}') == 1
+          assert rules.count('{') == rules.count('}')
+          for collection in ('churchBulletins','missionProfiles','bibleStudies','memberDirectory','helpRequests','careTasks','ministryGroups','hymnCatalog'):
+              assert f'match /{collection}/' in rules, collection
+          print('Static source checks passed. Firebase emulator authorization tests still required before deployment.')
+          PY

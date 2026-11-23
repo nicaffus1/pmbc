@@ -2,6 +2,11 @@
 import { auth, db } from "./firebase.js";
 import { mountPrayer, unmountPrayer } from "./prayer.js";
 import { mountBulletin, unmountBulletin } from "./bulletin.js";
+import { mountResourceHub, unmountResourceHub } from "./resource-hub.js";
+import { mountAnsweredPrayers, unmountAnsweredPrayers } from "./answered-prayers.js";
+import { mountDirectory, unmountDirectory } from "./member-directory.js";
+import { mountHelpBoard, unmountHelpBoard } from "./help-board.js";
+import { mountCareBoard, unmountCareBoard } from "./care-board.js";
 import { mountServe, unmountServe } from "./serve.js";
 import { mountHomeUpdates, unmountHomeUpdates } from "./home-updates.js";
 import { mountNotifications, unmountNotifications } from "./notifications.js";
@@ -137,8 +142,8 @@ function home() {
  </section>
  <section id="daily-verse" class="daily-verse card" aria-label="Verse of the Day"></section>
  ${givingCard(true)}
- <a class="feature-link" href="#bulletin"><div><strong>Sunday Bulletin</strong><span>Scripture, order of worship, and announcements</span></div><b class="arrow" aria-hidden="true">›</b></a>
- <a class="feature-link" href="#visitor"><div><strong>Planning a Visit?</strong><span>Welcome, directions, and what to expect</span></div><b class="arrow" aria-hidden="true">›</b></a>
+ <a class="feature-link" href="#bulletin"><div><strong>This Week’s Bulletin</strong><span>Scripture, order of worship, and announcements</span></div><b class="arrow" aria-hidden="true">›</b></a>
+ <a class="feature-link" href="#visitor"><div><strong>New to Providence?</strong><span>Plan a visit and learn what to expect</span></div><b class="arrow" aria-hidden="true">›</b></a>
  ${facebookUpdates()}
  <div id="updates-notice" class="notice" hidden></div>
  <section class="home-updates" aria-label="Church updates">
@@ -166,19 +171,43 @@ function home() {
  </section>`;
 }
 function bulletin(){return '<div id="bulletin-root"></div>';}
+function missions(){return '<div id="resource-root"></div>';}
+function studies(){return '<div id="resource-root"></div>';}
+function groups(){return '<div id="resource-root"></div>';}
+function hymns(){return '<div id="resource-root"></div>';}
+function directory(){return '<div id="directory-root"></div>';}
+function help(){return '<div id="help-root"></div>';}
+function care(){return '<div id="care-root"></div>';}
+function adminHub(){
+ if(!isAdmin())return '<article class="card">Administrator access is required.</article>';
+ return `<span class="eyebrow">Church administration</span><h1>Management Hub</h1>
+ <p class="muted">Quick access to ministry administration. Each feature retains its own access controls.</p>
+ <section class="admin-links">
+ <a class="feature-link" href="#account"><div><strong>Member Approvals</strong><span>Approve new account requests</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#care"><div><strong>Care & Follow-Up</strong><span>Private leadership follow-up tasks</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#serve"><div><strong>Volunteer Scheduling</strong><span>Manage teams, positions and shifts</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#notifications"><div><strong>Announcements & Notifications</strong><span>Publish app notices and enable phone delivery</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#bulletin"><div><strong>Sunday Bulletin</strong><span>Edit and publish the weekly service guide</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#missions"><div><strong>Missions</strong><span>Manage missionary updates</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#studies"><div><strong>Discipleship</strong><span>Manage Bible studies</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#groups"><div><strong>Ministry Groups</strong><span>Manage class and ministry notices</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#hymns"><div><strong>Hymnal</strong><span>Maintain song references and links</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#help"><div><strong>Help Board</strong><span>Review practical needs and volunteers</span></div><b class="arrow">›</b></a></section>`;
+}
 function visitor(){return `<section class="visitor-intro"><span class="eyebrow">Welcome to Providence</span><h1>Plan Your Visit</h1><p>We would be glad to worship with you at Providence Missionary Baptist Church in Center, Texas.</p></section>
  <article class="card"><h2>Come Visit</h2><p><strong>Providence Missionary Baptist Church</strong></p>
  <p>1129 CR 1265, Center, TX</p>
- <div class="visitor-action"><a class="button" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&amp;query=1129%20CR%201265%2C%20Center%2C%20TX">Get Directions</a>
+ <div class="visitor-action"><a class="button" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=1129%20CR%201265%2C%20Center%2C%20TX">Get Directions ↗</a>
  <a class="button outline" href="mailto:church@providence.center?subject=Planning%20a%20Visit">Ask a Question</a></div></article>
- <article class="card"><h2>What to Expect</h2><p>Our congregation gathers to worship God, hear the Scriptures, and encourage one another.</p>
- <details class="visitor-details"><summary>What time are services?</summary><p>For current service times, visit <a href="https://www.providence.center/" target="_blank" rel="noopener noreferrer">our church website</a> so you have the latest information.</p></details>
- <details class="visitor-details"><summary>Can I bring my children?</summary><p>Yes, families and children are welcome. Contact the church if you have questions about activities for children.</p></details>
- <details class="visitor-details"><summary>Do I need an account?</summary><p>No. Public information is available without creating an account.</p></details></article>
- <article class="card"><h2>Get in Touch</h2><p>Have a question about your visit?</p><a href="mailto:church@providence.center?subject=Visitor%20Question">Email Providence</a></article>`;}
+ <article class="card"><h2>What to Expect</h2><p>You'll find a congregation of believers gathering to worship God, hear the Scriptures, and encourage one another.</p>
+ <details class="visitor-details"><summary>When are services?</summary><p>Sunday worship begins at 11:00 a.m. For other gathering times, visit <a href="https://www.providence.center/" target="_blank" rel="noopener noreferrer">our church website</a>. We keep times there so they are not duplicated or accidentally out of date.</p></details>
+ <details class="visitor-details"><summary>Can I bring my children?</summary><p>Yes. Families and children are welcome. If you have questions about children's activities, please contact the church before your visit.</p></details>
+ <details class="visitor-details"><summary>Do I need to make an account?</summary><p>No. Visitors can explore public church information without registering for member access.</p></details></article>
+ <article class="card"><h2>Stay Connected</h2><p>Have a question or want someone to contact you? Send a message directly to the church.</p><a href="mailto:church@providence.center?subject=New%20Visitor%20Question">Email Providence ↗</a></article>`;}
 function prayer() {
- return '<div id="prayer-root"></div>';
+ return '<div id="prayer-root"></div><a class="feature-link" href="#answered"><div><strong>Answered Prayers</strong><span>Remember the requests marked answered</span></div><b class="arrow" aria-hidden="true">›</b></a>';
 }
+function answered(){return '<div id="answered-root"></div>';}
 function serve() {
  return '<div id="serve-root"></div>';
 }
@@ -222,6 +251,18 @@ function accountPage() {
 }
 function more() {
  return `<span class="eyebrow">Connect &amp; Support</span><h1>More</h1>
+ <section class="card more-community-menu"><h2>Church Life</h2>
+ <a class="feature-link" href="#bulletin"><div><strong>Sunday Bulletin</strong><span>Order of worship and Scripture</span></div><b class="arrow">›</b></a>
+ ${isApproved()?`<details><summary>Member connections</summary> <a class="feature-link" href="#help"><div><strong>Church Needs & Help</strong><span>Find ways to serve one another</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#directory"><div><strong>Member Directory</strong><span>Opt-in contacts for approved members</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#groups"><div><strong>Ministry Groups</strong><span>Classes, youth and other ministries</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#answered"><div><strong>Answered Prayers</strong><span>Remember answered requests</span></div><b class="arrow">›</b></a></details>`:`<a class="feature-link" href="#account">Member sign in</a>`}</section>
+ <details class="card more-resources"><summary>Study & Ministry Resources</summary>
+ <a class="feature-link" href="#studies"><div><strong>Bible Studies</strong><span>Scripture and reflection questions</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#missions"><div><strong>Missions & Missionaries</strong><span>Updates from supported ministries</span></div><b class="arrow">›</b></a>
+ <a class="feature-link" href="#hymns"><div><strong>Digital Hymnal</strong><span>Hymn references and resources</span></div><b class="arrow">›</b></a></details>
+ <a class="feature-link" href="#visitor"><div><strong>Plan Your Visit</strong><span>Welcome information for guests</span></div><b class="arrow">›</b></a>
+ ${isAdmin()?'<a class="feature-link admin-entry" href="#admin"><div><strong>Church Administration</strong><span>Manage church updates and private care</span></div><b class="arrow">›</b></a>':''}
  <section class="card appearance-card" aria-label="Appearance settings">
   <h2>Appearance</h2>
   <label class="theme-toggle-row" for="darkModeToggle">
@@ -230,13 +271,10 @@ function more() {
   </label>
  </section>
  <section class="card share-pmbc-card" aria-label="Share the Providence app">
-  <h2>Share Providence</h2>
-  <p>Invite someone to stay connected with our church.</p>
+  <h2>Share Providence</h2><p>Invite someone to stay connected with our church.</p>
   <button type="button" class="button share-pmbc-button" id="sharePmbcApp">Share Church App ↗</button>
   <p class="section-note" id="sharePmbcStatus" role="status" aria-live="polite"></p>
  </section>
- <a class="feature-link" href="#bulletin"><div><strong>Sunday Bulletin</strong><span>The service guide for this week</span></div><b class="arrow" aria-hidden="true">›</b></a>
- <a class="feature-link" href="#visitor"><div><strong>Plan Your Visit</strong><span>Directions and welcome information</span></div><b class="arrow" aria-hidden="true">›</b></a>
  ${givingCard()}
  ${contactUs()}
  ${churchInfo()}`;
@@ -268,13 +306,18 @@ function adminView() {
  <button class="button outline" id="backToAccount">Back to Account</button>
  ${list || '<p class="muted">No pending membership requests.</p>'}`;
 }
-const views = {home, prayer, serve, more, notifications, videos, bulletin, visitor, account:accountPage};
+const views = {home, prayer, serve, more, notifications, videos, bulletin, visitor, missions, studies, groups, hymns, directory, help, care, admin:adminHub, answered, account:accountPage};
 function navigate(next) {
  section = views[next]?next:"home";render();
 }
 function render(){
  unmountPrayer();
  unmountBulletin();
+ unmountResourceHub();
+ unmountAnsweredPrayers();
+ unmountDirectory();
+ unmountHelpBoard();
+ unmountCareBoard();
  unmountServe();
  unmountHomeUpdates();
  unmountNotifications();
@@ -285,8 +328,13 @@ function render(){
  if(section==="home"){ mountHomeUpdates(screen,user,profile);mountDailyVerse();mountFacebookPosts();mountVideos(false); }
  if(section==="videos") mountVideos(true,isAdmin());
  if(section==="bulletin") mountBulletin(screen.querySelector("#bulletin-root"),isAdmin());
+ if(["missions","studies","groups","hymns"].includes(section)) mountResourceHub(screen.querySelector("#resource-root"),section,isAdmin(),isApproved());
+ if(section==="directory") mountDirectory(screen.querySelector("#directory-root"),user,profile);
+ if(section==="help") mountHelpBoard(screen.querySelector("#help-root"),user,profile);
+ if(section==="care") mountCareBoard(screen.querySelector("#care-root"),isAdmin());
  if(section==="notifications") mountNotifications(screen.querySelector("#notifications-root"),user,profile);
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
+ if(section==="answered") mountAnsweredPrayers(screen.querySelector("#answered-root"),user,profile);
  if(section==="serve") mountServe(screen.querySelector("#serve-root"),user,profile);
  navTabs.forEach(b=>b.classList.toggle("active",b.dataset.tab===section));
  const bell=document.getElementById("notificationBell");
