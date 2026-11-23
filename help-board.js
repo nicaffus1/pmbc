@@ -2,7 +2,7 @@
 import {db} from "./firebase.js";
 import {collection,doc,addDoc,onSnapshot,query,where,serverTimestamp,updateDoc,setDoc,deleteDoc} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let root=null,user=null,profile=null,stops=[],requests=new Map(),responseStops=[],responses=new Map(),seen=new Set(),message="";
+let root=null,user=null,profile=null,stops=[],requests=new Map(),responseStops=new Map(),responses=new Map(),seen=new Set(),message="";
 const approved=()=>!!user&&profile?.status==="approved";
 const admin=()=>approved()&&profile?.role==="admin";
 function draw(){
