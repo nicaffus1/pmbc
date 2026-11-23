@@ -113,6 +113,17 @@ function churchInfo(){
    </div>
  </section>`;
 }
+function websiteHub(){
+ return `<section class="website-hub" aria-label="Providence website and visitor resources">
+  <div class="home-heading"><h2>Church Website</h2><a href="https://www.providence.center/" target="_blank" rel="noopener noreferrer" class="website-hub-link">Visit site ↗</a></div>
+  <p class="website-hub-intro">Looking for service information or learning about Providence? Find everything on our main website.</p>
+  <div class="website-hub-grid">
+   <a href="https://www.providence.center/about-us" target="_blank" rel="noopener noreferrer"><span class="website-hub-icon" aria-hidden="true">⌂</span><strong>About Us</strong><small>Our beliefs and church</small></a>
+   <a href="https://www.providence.center/calendar" target="_blank" rel="noopener noreferrer"><span class="website-hub-icon" aria-hidden="true">▦</span><strong>Church Calendar</strong><small>Public services &amp; events</small></a>
+   <a href="https://www.providence.center/next-steps" target="_blank" rel="noopener noreferrer"><span class="website-hub-icon" aria-hidden="true">♡</span><strong>Next Steps</strong><small>Visit, connect, belong</small></a>
+  </div>
+ </section>`;
+}
 function facebookUpdates(){
  const page="https://www.facebook.com/providencembccenter/";
  return `<section class="home-facebook-section" aria-label="Church updates from Facebook">
@@ -133,7 +144,7 @@ function home() {
  ${facebookUpdates()}
  <div id="updates-notice" class="notice" hidden></div>
  <section class="home-updates" aria-label="Church updates">
-   <div class="home-heading"><h2>Upcoming Events</h2>
+   <div class="home-heading"><h2>Member Events</h2>
      ${isAdmin()?`<details class="home-create" data-panel="create-event">
       <summary>+ Add</summary>
       <form class="stack update-editor" data-update-form="event">
@@ -167,7 +178,8 @@ function notifications(){
 }
 function videos(){
  return `<div class="videos-page"><span class="eyebrow">Sermons &amp; Messages</span><h1>Sermons</h1>
- <p class="muted">Watch recent sermons and explore Providence’s YouTube archive.</p>
+ <p class="muted">Listen to recent messages and find teachings by topic. The church website also has sermon notes and Scripture references.</p>
+  <a class="sermon-website-link" href="https://www.providence.center/sermons/enduring-faith" target="_blank" rel="noopener noreferrer">Explore sermons on our church website ↗</a>
  <div id="videos-page-list"><p class="muted">Loading sermons…</p></div></div>`;
 }
 function form() {
