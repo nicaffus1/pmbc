@@ -397,7 +397,11 @@ service cloud.firestore {
             && (!('signupCount' in request.resource.data)
                 || (request.resource.data.signupCount is int && request.resource.data.signupCount >= 0))
             && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['signupCount'])
-                || !('signupCount' in resource.data))
+                || !('signupCount' in resource.data)
+                || (request.resource.data.diff(resource.data).affectedKeys().hasAny(['capacity'])
+                    && resource.data.capacity == 0
+                    && request.resource.data.capacity > 0
+                    && request.resource.data.signupCount <= request.resource.data.capacity))
             && request.resource.data.notes is string
             && request.resource.data.notes.size() <= 300
             && request.resource.data.startsAt is string
