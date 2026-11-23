@@ -571,3 +571,14 @@ html.dark-mode{color-scheme:dark;background:#0b1420;color:#e3edf5}
 .dark-mode .website-hub-intro,.dark-mode .website-hub-grid small,.dark-mode .member-calendar-link,.dark-mode .website-more-card p{color:#adc4d1}
 .dark-mode .website-hub-link,.dark-mode .member-calendar-link a,.dark-mode .sermon-website-link,.dark-mode .website-more-links a{color:#8ddce7}
 @media(max-width:370px){.website-hub-grid{gap:6px}.website-hub-grid a{padding:11px 7px}.website-hub-grid strong{font-size:11px}.website-hub-grid small{font-size:9px}.website-more-links{grid-template-columns:1fr}}
+
+/* Compact home shortcut to avoid duplicating the website's navigation. */
+.website-quick-link{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:20px 0 24px;padding:14px 15px;border:1px solid #dce9ef;border-radius:13px;background:#f7fafb}
+.website-quick-link>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.website-quick-link strong{font-size:13px;line-height:1.3}
+.website-quick-link span{font-size:11px;color:#687e8d;line-height:1.45}
+.website-quick-link a{font-size:12px;line-height:1.3;color:#0b6178;font-weight:750;text-decoration:none;flex:0 0 auto;text-align:right}
+.dark-mode .website-quick-link{background:#192a3c;border-color:#344b5e}
+.dark-mode .website-quick-link span{color:#adc4d1}
+.dark-mode .website-quick-link a{color:#8ddce7}
+@media(max-width:370px){.website-quick-link{align-items:flex-start;flex-direction:column}.website-quick-link a{text-align:left}}
