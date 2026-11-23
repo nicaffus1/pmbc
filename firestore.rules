@@ -510,17 +510,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Public weekly bulletin. Only an approved administrator can edit it.
+    // Weekly bulletin: public published copy, editable only by approved admins.
     match /churchBulletins/{bulletinId} {
       function validBulletin(data) {
         return bulletinId == 'current'
           && data.keys().hasOnly(['date','theme','scripture','order','announcements','notes','published','updatedAt'])
           && data.keys().hasAll(['date','theme','scripture','order','announcements','notes','published','updatedAt'])
-          && data.date is string && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}
-    match /{document=**} { allow read, write: if false; }
-  }
-}
-)
+          && data.date is string && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
           && data.theme is string && data.theme.size() <= 120
           && data.scripture is string && data.scripture.size() <= 1000
           && data.order is string && data.order.size() <= 2500
@@ -535,8 +531,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Curated public-facing mission profiles and Bible studies.
-    // Unpublished drafts are readable only by approved administrators.
+    // Published resources may be read by visitors; drafts by admins only.
     match /missionProfiles/{resourceId} {
       function validMission(data) {
         return data.keys().hasOnly(['title','category','summary','body','url','published','createdAt','updatedAt'])
@@ -546,21 +541,18 @@ service cloud.firestore {
           && data.summary is string && data.summary.size() <= 700
           && data.body is string && data.body.size() >= 3 && data.body.size() <= 4000
           && data.url is string && data.url.size() <= 500
-          && (data.url == '' || data.url.matches('^https://[^ ]+
-    match /{document=**} { allow read, write: if false; }
-  }
-}
-))
+          && (data.url == '' || data.url.matches('^https://[^ ]+$'))
           && data.published is bool
           && data.createdAt is timestamp && data.updatedAt == request.time;
       }
-      allow get, list: if isAdmin() || (resource != null && resource.data.published == true);
+      allow get, list: if isAdmin() || resource.data.published == true;
       allow create: if isAdmin() && validMission(request.resource.data)
         && request.resource.data.createdAt == request.time;
       allow update: if isAdmin() && validMission(request.resource.data)
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if false;
     }
+
     match /bibleStudies/{resourceId} {
       function validStudy(data) {
         return data.keys().hasOnly(['title','category','summary','body','url','published','createdAt','updatedAt'])
@@ -570,15 +562,11 @@ service cloud.firestore {
           && data.summary is string && data.summary.size() <= 700
           && data.body is string && data.body.size() >= 3 && data.body.size() <= 4000
           && data.url is string && data.url.size() <= 500
-          && (data.url == '' || data.url.matches('^https://[^ ]+
-    match /{document=**} { allow read, write: if false; }
-  }
-}
-))
+          && (data.url == '' || data.url.matches('^https://[^ ]+$'))
           && data.published is bool
           && data.createdAt is timestamp && data.updatedAt == request.time;
       }
-      allow get, list: if isAdmin() || (resource != null && resource.data.published == true);
+      allow get, list: if isAdmin() || resource.data.published == true;
       allow create: if isAdmin() && validStudy(request.resource.data)
         && request.resource.data.createdAt == request.time;
       allow update: if isAdmin() && validStudy(request.resource.data)
