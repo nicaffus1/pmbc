@@ -181,7 +181,7 @@
 
 /* Prayer list v28: a name-first, privacy-aware prayer experience. */
 #prayer-root h2{margin:20px 0 10px}
-.prayer-list-row{display:flex;align-items:stretch;border:1px solid #e0eaf0;border-radius:12px;margin:8px 0;background:#fff;overflow:hidden}
+.prayer-list-row{display:flex;flex-wrap:wrap;align-items:stretch;border:1px solid #e0eaf0;border-radius:12px;margin:8px 0;background:#fff;overflow:hidden}
 .prayer-list-row.selected{border-color:#3f9ca9;background:#f5fbfc}
 .prayer-person{flex:1;display:flex;align-items:center;gap:7px;min-width:0;border:0;background:transparent;color:#143b5d;font:inherit;text-align:left;padding:13px 10px 13px 14px;cursor:pointer}
 .prayer-person-name{font-size:15px;font-weight:700;overflow-wrap:anywhere;min-width:0}
@@ -475,3 +475,5 @@ html.dark-mode{color-scheme:dark;background:#0b1420;color:#e3edf5}
 .sermon-archive{margin:25px 0 14px;padding:18px;border:1px solid #e1eaf0;border-radius:13px}
 .sermon-archive p{font-size:13px;line-height:1.5;margin:0 0 12px}
 .dark-mode .sermon-archive{background:#192a3c;border-color:#344b5e}
+
+.prayer-list-row > .prayer-selected-detail{flex:0 0 100%;box-sizing:border-box;margin:0;border:0;border-top:1px solid #e0eaf0;border-radius:0;padding:14px 16px;background:#f9fcfd}\n.dark-mode .prayer-list-row > .prayer-selected-detail{border-color:#385367;background:#1b3140}\n
