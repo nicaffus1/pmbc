@@ -19,7 +19,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import {
   doc, getDoc, setDoc, serverTimestamp, collection, query,
-  where, getDocs, updateDoc
+  where, limit, getDocs, updateDoc
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
 const REGISTRATION_ENABLED = true; // Enabled after the owner confirmed secure Firestore rules were published.
@@ -249,19 +249,37 @@ function accountPage() {
  ${user ? (review && isAdmin()? adminView() : account()) : form()}
  </div>`;
 }
-function more() {
- return `<span class="eyebrow">Connect &amp; Support</span><h1>More</h1>
- <section class="card more-community-menu"><h2>Church Life</h2>
- <a class="feature-link" href="#bulletin"><div><strong>Sunday Bulletin</strong><span>Order of worship and Scripture</span></div><b class="arrow">›</b></a>
- ${isApproved()?`<details><summary>Member connections</summary> <a class="feature-link" href="#help"><div><strong>Church Needs & Help</strong><span>Find ways to serve one another</span></div><b class="arrow">›</b></a>
- <a class="feature-link" href="#directory"><div><strong>Member Directory</strong><span>Opt-in contacts for approved members</span></div><b class="arrow">›</b></a>
+function connect() {
+ const visit = '<a class="feature-link" href="#visitor"><div><strong>Plan Your Visit</strong><span>Welcome information for guests</span></div><b class="arrow">›</b></a>';
+ if (!isApproved()) {
+   return `<h1>Connect</h1>${visit}<a class="feature-link" href="#account">${user ? "View membership status" : "Member sign in"}</a>`;
+ }
+ return `<h1>Connect</h1><div id="connect-need"></div>
+ <a class="feature-link" href="#help"><div><strong>Church Needs & Help</strong><span>Find ways to serve one another</span></div><b class="arrow">›</b></a>
  <a class="feature-link" href="#groups"><div><strong>Ministry Groups</strong><span>Classes, youth and other ministries</span></div><b class="arrow">›</b></a>
- <a class="feature-link" href="#answered"><div><strong>Answered Prayers</strong><span>Remember answered requests</span></div><b class="arrow">›</b></a></details>`:`<a class="feature-link" href="#account">Member sign in</a>`}</section>
+ <a class="feature-link" href="#directory"><div><strong>Member Directory</strong><span>Opt-in contacts for approved members</span></div><b class="arrow">›</b></a>
+ ${visit}`;
+}
+async function showOpenNeed(target) {
+ try {
+   const open = await getDocs(query(collection(db,"helpRequests"),where("status","==","open"),limit(1)));
+   if (!target.isConnected || open.empty) return;
+   const need = open.docs[0];
+   const link = document.createElement("a");
+   link.className = "feature-link";
+   link.href = "#help?need=" + encodeURIComponent(need.id);
+   link.textContent = "Open need · " + need.data().title;
+   target.append(link);
+ } catch {
+   // The help board link remains available when the preview cannot load.
+ }
+}
+function more() {
+ return `<h1>More</h1>
  <details class="card more-resources"><summary>Study & Ministry Resources</summary>
  <a class="feature-link" href="#studies"><div><strong>Bible Studies</strong><span>Scripture and reflection questions</span></div><b class="arrow">›</b></a>
  <a class="feature-link" href="#missions"><div><strong>Missions & Missionaries</strong><span>Updates from supported ministries</span></div><b class="arrow">›</b></a>
  <a class="feature-link" href="#hymns"><div><strong>Digital Hymnal</strong><span>Hymn references and resources</span></div><b class="arrow">›</b></a></details>
- <a class="feature-link" href="#visitor"><div><strong>Plan Your Visit</strong><span>Welcome information for guests</span></div><b class="arrow">›</b></a>
  ${isAdmin()?'<a class="feature-link admin-entry" href="#admin"><div><strong>Church Administration</strong><span>Manage church updates and private care</span></div><b class="arrow">›</b></a>':''}
  <section class="card appearance-card" aria-label="Appearance settings">
   <h2>Appearance</h2>
@@ -306,9 +324,10 @@ function adminView() {
  <button class="button outline" id="backToAccount">Back to Account</button>
  ${list || '<p class="muted">No pending membership requests.</p>'}`;
 }
-const views = {home, prayer, serve, more, notifications, videos, bulletin, visitor, missions, studies, groups, hymns, directory, help, care, admin:adminHub, answered, account:accountPage};
+const views = {connect, home, prayer, serve, more, notifications, videos, bulletin, visitor, missions, studies, groups, hymns, directory, help, care, admin:adminHub, answered, account:accountPage};
 function navigate(next) {
- section = views[next]?next:"home";render();
+ const route = next.split("?")[0];
+ section = Object.hasOwn(views,route)?route:"home";render();
 }
 function render(){
  unmountPrayer();
@@ -325,6 +344,7 @@ function render(){
  unmountDailyVerse();
  unmountFacebookPosts();
  screen.innerHTML=views[section]();
+ if(section==="connect" && isApproved()) showOpenNeed(screen.querySelector("#connect-need"));
  if(section==="home"){ mountHomeUpdates(screen,user,profile);mountDailyVerse();mountFacebookPosts();mountVideos(false); }
  if(section==="videos") mountVideos(true,isAdmin());
  if(section==="bulletin") mountBulletin(screen.querySelector("#bulletin-root"),isAdmin());
@@ -336,7 +356,12 @@ function render(){
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
  if(section==="answered") mountAnsweredPrayers(screen.querySelector("#answered-root"),user,profile);
  if(section==="serve") mountServe(screen.querySelector("#serve-root"),user,profile);
- navTabs.forEach(b=>b.classList.toggle("active",b.dataset.tab===section));
+ const parentTab = {visitor:"connect",help:"connect",groups:"connect",directory:"connect",answered:"prayer",bulletin:"home",studies:"more",missions:"more",hymns:"more",admin:"more",care:"more"}[section] || section;
+ navTabs.forEach(button=>{
+   const active = button.dataset.tab === parentTab;
+   button.classList.toggle("active",active);
+   button.setAttribute("aria-current",active ? "page" : "false");
+ });
  const bell=document.getElementById("notificationBell");
  if(bell)bell.classList.toggle("active",section==="notifications");
  const accountButton=document.getElementById("accountButton");

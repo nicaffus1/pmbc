@@ -8,6 +8,9 @@ const admin=()=>approved()&&profile?.role==="admin";
 function draw(){
  if(!root)return;
  const items=[...requests.entries()].filter(([id,x])=>x.status==="open"||admin()||x.authorId===user?.uid).sort((a,b)=>(b[1].createdAt?.toMillis?.()||0)-(a[1].createdAt?.toMillis?.()||0));
+ const requestedId = new URLSearchParams(location.hash.split("?")[1]).get("need");
+ const selected = items.findIndex(([id])=>id===requestedId);
+ if(selected>0) items.unshift(items.splice(selected,1)[0]);
  root.innerHTML='<header class="resource-intro"><span class="eyebrow">Serve one another</span><h1>Church Help Board</h1><p class="muted">Practical needs and ways to help within the church. Please avoid posting sensitive medical or family details.</p></header>'+
  (!approved()?'<article class="card">Sign in with an approved church account to view or offer help.</article>':
  '<details class="card resource-create"><summary>+ Share a practical need</summary><form id="newNeedForm" class="stack">'+
