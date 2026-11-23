@@ -37,6 +37,9 @@ async function save(e){
  };
  if(data.displayName.length<2||data.displayName.length>80){status.textContent="Enter a name between 2 and 80 characters.";return;}
  if(data.showPhone&&!data.phone||data.showEmail&&!data.contactEmail){status.textContent="Add contact information before choosing to share it.";return;}
+ // Do not store hidden contact information inside readable directory documents.
+ if(!data.showPhone)data.phone="";
+ if(!data.showEmail)data.contactEmail="";
  button.disabled=true;status.textContent="Saving…";
  try{await setDoc(doc(db,"memberDirectory",sessionUser.uid),{...data,updatedAt:serverTimestamp()});status.textContent="Preferences saved.";}
  catch(err){status.textContent="Unable to save: "+(err?.code||"check access");}
