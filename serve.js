@@ -2,7 +2,7 @@
 import { db } from "./firebase.js";
 import {
   collection, doc, addDoc, setDoc, deleteDoc, updateDoc,
-  onSnapshot, serverTimestamp
+  onSnapshot, serverTimestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({
@@ -77,6 +77,9 @@ function shiftList(mid,pid){
   const visibility=x.rosterVisibility||"members";
   const audienceAllowed=admin()||visibility==="members";
   const roster=shiftRosters.get(key);
+  const limit=Number.isInteger(x.capacity)&&x.capacity>0?x.capacity:0;
+  const used=Number.isInteger(x.signupCount)?x.signupCount:(roster?.length??0);
+  const full=limit>0&&used>=limit;
   const rosterMarkup=audienceAllowed?
     `<div class="shift-roster">
       <strong>Volunteers (${roster?.length??"…"})</strong>
@@ -88,12 +91,13 @@ function shiftList(mid,pid){
   return `<div class="shift-entry">
     <strong>${showShiftTime(x.startsAt)} to ${showShiftTime(x.endsAt).split(" · ").pop()} CT</strong>
     ${x.notes?`<p>${esc(x.notes)}</p>`:""}
+    <div class="shift-capacity ${full?"is-full":""}">${limit?`<strong>${full?"Shift Full":Math.max(0,limit-used)+" of "+limit+" spots open"}</strong><span>${used} signed up</span>`:"<span>Open volunteer sign-up</span>"}</div>
     ${rosterMarkup}
     <div class="shift-primary-actions">
       <button class="button ${signed?"outline":""}" type="button" data-toggle-shift
         data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}"
-        ${pendingWrites.has("shift:"+key)||(!signed&&past)?"disabled":""}>
-        ${signed?"✓ Signed Up — Cancel Shift":past?"Shift Ended":"Sign Up for Shift"}
+        ${pendingWrites.has("shift:"+key)||(!signed&&(past||full))?"disabled":""}>
+        ${signed?"✓ Signed Up — Cancel Shift":past?"Shift Ended":full?"Shift Full":"Sign Up for Shift"}
       </button>
     </div>
     ${admin()?`<details class="manage-menu" data-panel="manage-shift:${esc(mid)}:${esc(pid)}:${esc(x.id)}">
@@ -108,6 +112,7 @@ function shiftList(mid,pid){
             <label>Start time
               <select class="field" name="start" required>${startOptions(roundedStart(x.startsAt.slice(11,16)))}</select></label>
             <p class="section-note">Duration: 1 hour automatically.</p>
+            <label>Volunteer limit (0 = unlimited)<input class="field" type="number" name="capacity" min="0" max="50" value="${Number.isInteger(x.capacity)?x.capacity:0}" required></label>
             <label>Notes (optional)
               <input class="field" name="notes" maxlength="300" value="${esc(x.notes||"")}"></label>
             <button class="button" type="submit">Save changes</button>
@@ -132,6 +137,7 @@ function shiftList(mid,pid){
       <select class="field" name="start" required>${startOptions()}</select>
     </label>
     <label>Notes (optional)<input class="field" name="notes" maxlength="300"></label>
+    <label>Volunteer limit (0 = unlimited)<input class="field" type="number" name="capacity" min="0" max="50" value="0" required></label>
     <p class="section-note">Volunteer names are visible to all approved members and administrators.</p>
     <p class="section-note">Every shift lasts one hour. Choose a start time in 30-minute steps (Central Time).</p>
     <button class="button outline" type="submit">Save Shift</button>
@@ -430,6 +436,7 @@ async function addShift(event){
  try{
    await addDoc(collection(db,"ministries",mid,"positions",pid,"shifts"),{
      startsAt,endsAt,timeZone:"America/Chicago",notes,active:true,
+     capacity:Number(form.elements.namedItem("capacity").value),signupCount:0,
      rosterVisibility:"members",
      createdBy:account.uid,createdAt:serverTimestamp()
    });
@@ -482,6 +489,13 @@ async function editShift(event){
  if(endsAt<=chicagoNow()){notice("Choose a future shift time.",true);return;}
  if(notes.length>300){notice("Notes must be 300 characters or fewer.",true);return;}
  const changes={};
+ const capacity=Number(form.elements.namedItem("capacity").value);
+ if(!Number.isInteger(capacity)||capacity<0||capacity>50){notice("Choose a volunteer limit between 0 and 50.",true);return;}
+ const roster=shiftRosters.get(shiftKey(mid,pid,sid));
+ if(!roster){notice("Wait for the volunteer roster to load before changing capacity.",true);return;}
+ if(capacity>0&&roster.length>capacity){notice("There are already more volunteers than that limit.",true);return;}
+ if(capacity!==(existing.capacity||0))changes.capacity=capacity;
+ if(capacity>0&&!Number.isInteger(existing.signupCount))changes.signupCount=roster.length;
  if(startsAt!==existing.startsAt)changes.startsAt=startsAt;
  if(endsAt!==existing.endsAt)changes.endsAt=endsAt;
  if(notes!==(existing.notes||""))changes.notes=notes;
@@ -514,14 +528,35 @@ async function toggleShift(button){
  pendingWrites.add(lock);draw();
  const ref=doc(db,"ministries",mid,"positions",pid,"shifts",sid,"signups",account.uid);
  try{
-   if(alreadyJoined)await deleteDoc(ref);
-   else await setDoc(ref,{
-     memberId:account.uid,memberName:profile.displayName,createdAt:serverTimestamp()
-   });
+   if(!Number.isInteger(item.capacity)||item.capacity===0){
+     if(alreadyJoined)await deleteDoc(ref);
+     else await setDoc(ref,{
+       memberId:account.uid,memberName:profile.displayName,createdAt:serverTimestamp()
+     });
+   }else{
+     const shiftRef=doc(db,"ministries",mid,"positions",pid,"shifts",sid);
+     await runTransaction(db,async tx=>{
+       const shiftSnap=await tx.get(shiftRef);
+       const signupSnap=await tx.get(ref);
+       if(!shiftSnap.exists()||!shiftSnap.data().active)throw new Error("Shift unavailable");
+       const current=shiftSnap.data(),count=current.signupCount;
+       if(!Number.isInteger(count))throw new Error("Admin must initialize this shift's volunteer limit.");
+       if(alreadyJoined){
+         if(!signupSnap.exists())throw new Error("Sign-up already canceled. Refresh.");
+         tx.delete(ref);
+         tx.update(shiftRef,{signupCount:Math.max(0,count-1)});
+       }else{
+         if(signupSnap.exists())throw new Error("Already signed up.");
+         if(count>=current.capacity)throw new Error("This shift is full.");
+         tx.set(ref,{memberId:account.uid,memberName:profile.displayName,createdAt:serverTimestamp()});
+         tx.update(shiftRef,{signupCount:count+1});
+       }
+     });
+   }
    shiftJoined.set(key,!alreadyJoined);
    notice(alreadyJoined?"Your shift sign-up was canceled.":"You are signed up for this shift.");
  }catch(error){
-   notice("Couldn't change shift signup ("+(error.code||"error")+"). Check Firebase rules.",true);
+   notice(error.message||("Couldn't change shift signup ("+(error.code||"error")+")."),true);
  }finally{pendingWrites.delete(lock);draw();}
 }
 
@@ -653,9 +688,9 @@ export function mountServe(container,user,userProfile){
    return;
  }
  root.innerHTML=`<span class="eyebrow">Get involved</span><h1>Serve</h1>
- <p class="muted">Find a ministry and sign up for a scheduled shift.</p>
+ <p class="muted serve-intro">Find a place to help, choose a role, and reserve your spot.</p>
  <div id="serveMessage" hidden></div>
- <h2>Church Ministries</h2>
+ <div class="serve-heading"><h2>Church Ministries</h2><span>Volunteer opportunities</span></div>
  <label class="ministry-picker-label" for="ministryPicker">Select a Ministry</label>
  <select id="ministryPicker" class="field" aria-label="Select a Ministry"></select>
  <div id="ministriesList" aria-live="polite"><p class="muted">Loading ministries…</p></div>`;
