@@ -68,6 +68,16 @@ function roundedStart(value){
  const nearest=Math.min(47,Math.max(0,Math.round(minutes/30)));
  return String(Math.floor(nearest/2)).padStart(2,"0")+":"+(nearest%2?"30":"00");
 }
+function shiftCalendarUrl(shift){
+ const dates=(shift.startsAt.replace(/[-:]/g,"")+"00")+"/"+(shift.endsAt.replace(/[-:]/g,"")+"00");
+ const params=new URLSearchParams({
+  action:"TEMPLATE",text:"Providence Church — Volunteer Shift",dates,
+  ctz:"America/Chicago",
+  details:"You signed up to serve at Providence Missionary Baptist Church."+(shift.notes?" "+shift.notes:""),
+  location:"Providence Missionary Baptist Church, 1129 CR 1265, Center, TX"
+ });
+ return "https://calendar.google.com/calendar/render?"+params.toString();
+}
 function shiftList(mid,pid){
  const list=[...(shifts.get(positionKey(mid,pid))?.values()||[])].filter(x=>x.active && x.endsAt>chicagoNow())
    .sort((a,b)=>a.startsAt.localeCompare(b.startsAt));
@@ -93,6 +103,7 @@ function shiftList(mid,pid){
     ${x.notes?`<p>${esc(x.notes)}</p>`:""}
     <div class="shift-capacity ${full?"is-full":""}">${limit?`<strong>${full?"Shift Full":Math.max(0,limit-used)+" of "+limit+" spots open"}</strong><span>${used} signed up</span>`:"<span>Open volunteer sign-up</span>"}</div>
     ${rosterMarkup}
+    ${signed?`<a class="calendar-shift-link" href="${esc(shiftCalendarUrl(x))}" target="_blank" rel="noopener noreferrer">Add to Google Calendar ↗</a>`:""}
     <div class="shift-primary-actions">
       <button class="button ${signed?"outline":""}" type="button" data-toggle-shift
         data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}"
