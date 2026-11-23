@@ -529,7 +529,7 @@ service cloud.firestore {
           && data.published is bool
           && data.updatedAt == request.time;
       }
-      allow get: if bulletinId == 'current';
+      allow get: if bulletinId == 'current' && (isAdmin() || resource.data.published == true);
       allow list: if false;
       allow create, update: if isAdmin() && validBulletin(request.resource.data);
       allow delete: if false;
