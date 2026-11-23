@@ -582,3 +582,53 @@ html.dark-mode{color-scheme:dark;background:#0b1420;color:#e3edf5}
 .dark-mode .website-quick-link span{color:#adc4d1}
 .dark-mode .website-quick-link a{color:#8ddce7}
 @media(max-width:370px){.website-quick-link{align-items:flex-start;flex-direction:column}.website-quick-link a{text-align:left}}
+
+/* Serve — refreshed mobile-friendly volunteer workspace. */
+#serve-root>.eyebrow{display:block;margin:0 0 7px;font-size:11px;letter-spacing:.09em}
+#serve-root>h1{font-size:30px;line-height:1.2;letter-spacing:-.025em;margin:0 0 8px}
+#serve-root>.serve-intro{font-size:14px;line-height:1.6;margin:0 0 26px}
+#serve-root .serve-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 13px}
+#serve-root .serve-heading h2{margin:0;font-size:19px;letter-spacing:-.01em}
+#serve-root .serve-heading span{font-size:11px;color:#738698}
+#serve-root .ministry-picker-label{margin:0 0 8px;font-size:12px}
+#serve-root #ministryPicker{min-height:46px;border-radius:12px;margin:0 0 18px;font-size:15px}
+#serve-root .compact-ministry{border-radius:16px;padding:19px 16px 20px;box-shadow:0 2px 12px #163f5810}
+#serve-root .position-picker-heading{margin-bottom:8px}
+#serve-root .position-picker-label{font-size:12px}
+#serve-root .position-picker{min-height:45px;border-radius:11px;margin:0 0 17px}
+#serve-root .position-detail{padding-top:15px}
+#serve-root .position-detail>.position-description{font-size:13px;line-height:1.65;margin:0 0 19px}
+#serve-root .shift-list{padding-top:0}
+#serve-root .shift-list>h4{font-size:14px;letter-spacing:-.005em;margin:0 0 15px}
+#serve-root .shift-entry{margin:0 0 15px;padding:16px;border:1px solid #dce8ee;border-radius:15px;background:#f8fbfd}
+#serve-root .shift-entry>strong{font-size:14px;line-height:1.55;color:#204f68;letter-spacing:-.01em}
+#serve-root .shift-entry>p{font-size:13px;line-height:1.55;margin:8px 0 0}
+#serve-root .shift-capacity{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 9px;padding:10px 12px;background:#eaf5f7;border-radius:10px;color:#215e69;font-size:12px}
+#serve-root .shift-capacity strong{font-size:12px;line-height:1.4}
+#serve-root .shift-capacity span{font-size:11px;color:#4f7982}
+#serve-root .shift-capacity.is-full{background:#f3e9e8;color:#975447}
+#serve-root .shift-capacity.is-full span{color:#986960}
+#serve-root .shift-roster{margin:10px 0 14px;border-radius:10px;padding:12px 13px}
+#serve-root .shift-roster strong{font-size:12px}
+#serve-root .shift-roster li{line-height:1.75}
+#serve-root .shift-primary-actions{margin:12px 0 0}
+#serve-root .shift-primary-actions>.button{width:100%;min-height:44px;border-radius:10px;margin:0}
+#serve-root .shift-entry .manage-menu{margin:13px 0 0;padding-top:12px;border-top:1px solid #dce8ee}
+#serve-root .shift-form,#serve-root .edit-form{gap:13px}
+#serve-root .shift-form label,#serve-root .edit-form label{line-height:1.45;font-size:12px}
+#serve-root .shift-form .field,#serve-root .edit-form .field{min-height:44px;border-radius:10px}
+#serve-root .ministry-manage-panel{margin:0 0 15px;border-radius:12px}
+#serve-root .position-add-compact>summary{padding:7px 10px}
+.dark-mode #serve-root .shift-entry{background:#1b3140;border-color:#3b5467}
+.dark-mode #serve-root .shift-entry>strong{color:#d3eef7}
+.dark-mode #serve-root .shift-capacity{background:#244655;color:#bfe9ed}
+.dark-mode #serve-root .shift-capacity span{color:#a8d2da}
+.dark-mode #serve-root .shift-capacity.is-full{background:#483b3b;color:#f3c9bf}
+.dark-mode #serve-root .shift-capacity.is-full span{color:#e2b8af}
+.dark-mode #serve-root .shift-entry .manage-menu{border-color:#3b5467}
+.dark-mode #serve-root .serve-heading span{color:#adc1ce}
+@media(max-width:390px){
+ #serve-root .serve-heading{flex-direction:column;gap:3px}
+ #serve-root .compact-ministry{padding:15px 12px}
+ #serve-root .shift-entry{padding:14px 12px}
+}
