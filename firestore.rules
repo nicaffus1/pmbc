@@ -643,6 +643,48 @@ service cloud.firestore {
       }
     }
 
+    match /ministryGroups/{resourceId} {
+      function validEntry(data) {
+        return data.keys().hasOnly(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.keys().hasAll(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.title is string && data.title.size() >= 2 && data.title.size() <= 140
+          && data.category is string && data.category.size() <= 160
+          && data.summary is string && data.summary.size() <= 700
+          && data.body is string && data.body.size() >= 3 && data.body.size() <= 4000
+          && data.url is string && data.url.size() <= 500
+          && (data.url == '' || data.url.matches('^https://[^ ]+$'))
+          && data.published is bool && data.createdAt is timestamp
+          && data.updatedAt == request.time;
+      }
+      allow get, list: if isAdmin() || (approvedMember() && resource.data.published == true);
+      allow create: if isAdmin() && validEntry(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validEntry(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+
+    match /hymnCatalog/{resourceId} {
+      function validEntry(data) {
+        return data.keys().hasOnly(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.keys().hasAll(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.title is string && data.title.size() >= 2 && data.title.size() <= 140
+          && data.category is string && data.category.size() <= 160
+          && data.summary is string && data.summary.size() <= 700
+          && data.body is string && data.body.size() >= 3 && data.body.size() <= 4000
+          && data.url is string && data.url.size() <= 500
+          && (data.url == '' || data.url.matches('^https://[^ ]+$'))
+          && data.published is bool && data.createdAt is timestamp
+          && data.updatedAt == request.time;
+      }
+      allow get, list: if isAdmin() || (true && resource.data.published == true);
+      allow create: if isAdmin() && validEntry(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validEntry(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+
     // No access to other collections until they have dedicated rules.
     match /{document=**} { allow read, write: if false; }
   }
