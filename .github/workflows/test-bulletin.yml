@@ -1,0 +1,30 @@
+name: Test bulletin and visitor release
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Check app module syntax
+        run: |
+          node --input-type=module --check < app.js
+          node --input-type=module --check < bulletin.js
+          node --check service-worker.js
+          grep -q 'features.css' index.html
+          grep -q 'bulletin.js' service-worker.js
+      - name: Install Firebase rules-test dependencies
+        run: npm install --no-save --no-package-lock firebase@12 @firebase/rules-unit-testing@5 firebase-tools@14
+      - name: Test Firestore permissions with emulator
+        run: npx firebase emulators:exec --config firebase.emulator.json --project demo-pmbc-bulletin-test --only firestore "node tests/bulletin.rules.test.cjs"

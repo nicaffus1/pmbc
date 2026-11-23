@@ -1,6 +1,7 @@
 // PMBC live member access. Registration remains disabled until Firestore rules are published.
 import { auth, db } from "./firebase.js";
 import { mountPrayer, unmountPrayer } from "./prayer.js";
+import { mountBulletin, unmountBulletin } from "./bulletin.js";
 import { mountServe, unmountServe } from "./serve.js";
 import { mountHomeUpdates, unmountHomeUpdates } from "./home-updates.js";
 import { mountNotifications, unmountNotifications } from "./notifications.js";
@@ -136,6 +137,8 @@ function home() {
  </section>
  <section id="daily-verse" class="daily-verse card" aria-label="Verse of the Day"></section>
  ${givingCard(true)}
+ <a class="feature-link" href="#bulletin"><div><strong>Sunday Bulletin</strong><span>Scripture, order of worship, and announcements</span></div><b class="arrow" aria-hidden="true">›</b></a>
+ <a class="feature-link" href="#visitor"><div><strong>Planning a Visit?</strong><span>Welcome, directions, and what to expect</span></div><b class="arrow" aria-hidden="true">›</b></a>
  ${facebookUpdates()}
  <div id="updates-notice" class="notice" hidden></div>
  <section class="home-updates" aria-label="Church updates">
@@ -162,6 +165,17 @@ function home() {
   <div id="home-video-list"><p class="muted">Loading latest sermons…</p></div>
  </section>`;
 }
+function bulletin(){return '<div id="bulletin-root"></div>';}
+function visitor(){return `<section class="visitor-intro"><span class="eyebrow">Welcome to Providence</span><h1>Plan Your Visit</h1><p>We would be glad to worship with you at Providence Missionary Baptist Church in Center, Texas.</p></section>
+ <article class="card"><h2>Come Visit</h2><p><strong>Providence Missionary Baptist Church</strong></p>
+ <p>1129 CR 1265, Center, TX</p>
+ <div class="visitor-action"><a class="button" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&amp;query=1129%20CR%201265%2C%20Center%2C%20TX">Get Directions</a>
+ <a class="button outline" href="mailto:church@providence.center?subject=Planning%20a%20Visit">Ask a Question</a></div></article>
+ <article class="card"><h2>What to Expect</h2><p>Our congregation gathers to worship God, hear the Scriptures, and encourage one another.</p>
+ <details class="visitor-details"><summary>What time are services?</summary><p>For current service times, visit <a href="https://www.providence.center/" target="_blank" rel="noopener noreferrer">our church website</a> so you have the latest information.</p></details>
+ <details class="visitor-details"><summary>Can I bring my children?</summary><p>Yes, families and children are welcome. Contact the church if you have questions about activities for children.</p></details>
+ <details class="visitor-details"><summary>Do I need an account?</summary><p>No. Public information is available without creating an account.</p></details></article>
+ <article class="card"><h2>Get in Touch</h2><p>Have a question about your visit?</p><a href="mailto:church@providence.center?subject=Visitor%20Question">Email Providence</a></article>`;}
 function prayer() {
  return '<div id="prayer-root"></div>';
 }
@@ -221,6 +235,8 @@ function more() {
   <button type="button" class="button share-pmbc-button" id="sharePmbcApp">Share Church App ↗</button>
   <p class="section-note" id="sharePmbcStatus" role="status" aria-live="polite"></p>
  </section>
+ <a class="feature-link" href="#bulletin"><div><strong>Sunday Bulletin</strong><span>The service guide for this week</span></div><b class="arrow" aria-hidden="true">›</b></a>
+ <a class="feature-link" href="#visitor"><div><strong>Plan Your Visit</strong><span>Directions and welcome information</span></div><b class="arrow" aria-hidden="true">›</b></a>
  ${givingCard()}
  ${contactUs()}
  ${churchInfo()}`;
@@ -252,12 +268,13 @@ function adminView() {
  <button class="button outline" id="backToAccount">Back to Account</button>
  ${list || '<p class="muted">No pending membership requests.</p>'}`;
 }
-const views = {home, prayer, serve, more, notifications, videos, account:accountPage};
+const views = {home, prayer, serve, more, notifications, videos, bulletin, visitor, account:accountPage};
 function navigate(next) {
  section = views[next]?next:"home";render();
 }
 function render(){
  unmountPrayer();
+ unmountBulletin();
  unmountServe();
  unmountHomeUpdates();
  unmountNotifications();
@@ -267,6 +284,7 @@ function render(){
  screen.innerHTML=views[section]();
  if(section==="home"){ mountHomeUpdates(screen,user,profile);mountDailyVerse();mountFacebookPosts();mountVideos(false); }
  if(section==="videos") mountVideos(true,isAdmin());
+ if(section==="bulletin") mountBulletin(screen.querySelector("#bulletin-root"),isAdmin());
  if(section==="notifications") mountNotifications(screen.querySelector("#notifications-root"),user,profile);
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
  if(section==="serve") mountServe(screen.querySelector("#serve-root"),user,profile);
