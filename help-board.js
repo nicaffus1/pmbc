@@ -38,9 +38,9 @@ function syncOffers(items){
  for(const [id,stop] of responseStops){if(!wanted.has(id)){stop();responseStops.delete(id);responses.delete(id);}}
  for(const [id,r] of items){
   if(responseStops.has(id))continue;
-  const path=collection(db,"helpRequests",id,"offers");
-  const q=r.authorId===user.uid||admin()?path:query(path,where("memberId","==",user.uid));
-  const stop=onSnapshot(q,s=>{responses.set(id,s.docs.map(d=>d.data()));draw();},()=>{responses.set(id,[]);});
+  const viewingAll=r.authorId===user.uid||admin();
+  const path=viewingAll?collection(db,"helpRequests",id,"offers"):doc(db,"helpRequests",id,"offers",user.uid);
+  const stop=onSnapshot(path,s=>{responses.set(id,viewingAll?s.docs.map(d=>d.data()):(s.exists()?[s.data()]:[]));draw();},()=>{responses.set(id,[]);});
   responseStops.set(id,stop);
  }
 }
