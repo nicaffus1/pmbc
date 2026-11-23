@@ -130,7 +130,7 @@ function drawList(){
    </div>`;
  }).join("");
  if(!selectedPrayerId){
-   details.innerHTML='<p class="prayer-detail-hint">Tap a name above to read the prayer request.</p>';
+   details.innerHTML='';
    return;
  }
  const p=requestsById.get(selectedPrayerId);
@@ -145,6 +145,7 @@ function drawList(){
    ${isAdmin()?`<p class="prayer-total">${total===undefined?"Loading prayer count…":total+" prayers recorded"}</p>`:""}
    ${canEdit?`<button class="button outline" type="button" data-edit-prayer="${esc(selectedPrayerId)}">Edit / Answer / Remove Request</button>`:""}
  </article>`;
+ list.querySelector(".prayer-list-row.selected")?.append(details.firstElementChild);
 }
 function syncPrayed(){
  const active=new Set(requestsById.keys());
