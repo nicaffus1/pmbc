@@ -448,15 +448,10 @@ service cloud.firestore {
       }
     }
 
-    // Sermon metadata is visible to everyone; only approved admins can edit it.
+    // Sermon metadata: public read; only approved administrators may edit.
     match /sermonLibrary/{sermonId} {
       function validSermon(data) {
         return sermonId.size() == 11
-          && sermonId.matches('^[A-Za-z0-9_-]+
-    match /{document=**} { allow read, write: if false; }
-  }
-}
-)
           && data.keys().hasOnly(['id','title','speaker','scripture','topics','playlists','description','published','updatedAt'])
           && data.keys().hasAll(['id','title','speaker','scripture','topics','playlists','description','published','updatedAt'])
           && data.id == sermonId
