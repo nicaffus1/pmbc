@@ -3,6 +3,7 @@ import { auth, db } from "./firebase.js";
 import { mountPrayer, unmountPrayer } from "./prayer.js";
 import { mountBulletin, unmountBulletin } from "./bulletin.js";
 import { mountResourceHub, unmountResourceHub } from "./resource-hub.js";
+import { mountAnsweredPrayers, unmountAnsweredPrayers } from "./answered-prayers.js";
 import { mountServe, unmountServe } from "./serve.js";
 import { mountHomeUpdates, unmountHomeUpdates } from "./home-updates.js";
 import { mountNotifications, unmountNotifications } from "./notifications.js";
@@ -180,8 +181,9 @@ function visitor(){return `<section class="visitor-intro"><span class="eyebrow">
  <details class="visitor-details"><summary>Do I need to make an account?</summary><p>No. Visitors can explore public church information without registering for member access.</p></details></article>
  <article class="card"><h2>Stay Connected</h2><p>Have a question or want someone to contact you? Send a message directly to the church.</p><a href="mailto:church@providence.center?subject=New%20Visitor%20Question">Email Providence ↗</a></article>`;}
 function prayer() {
- return '<div id="prayer-root"></div>';
+ return '<div id="prayer-root"></div><a class="feature-link" href="#answered"><div><strong>Answered Prayers</strong><span>Remember the requests marked answered</span></div><b class="arrow" aria-hidden="true">›</b></a>';
 }
+function answered(){return '<div id="answered-root"></div>';}
 function serve() {
  return '<div id="serve-root"></div>';
 }
@@ -273,7 +275,7 @@ function adminView() {
  <button class="button outline" id="backToAccount">Back to Account</button>
  ${list || '<p class="muted">No pending membership requests.</p>'}`;
 }
-const views = {home, prayer, serve, more, notifications, videos, bulletin, visitor, missions, studies, account:accountPage};
+const views = {home, prayer, serve, more, notifications, videos, bulletin, visitor, missions, studies, answered, account:accountPage};
 function navigate(next) {
  section = views[next]?next:"home";render();
 }
@@ -281,6 +283,7 @@ function render(){
  unmountPrayer();
  unmountBulletin();
  unmountResourceHub();
+ unmountAnsweredPrayers();
  unmountServe();
  unmountHomeUpdates();
  unmountNotifications();
@@ -294,6 +297,7 @@ function render(){
  if(section==="missions"||section==="studies") mountResourceHub(screen.querySelector("#resource-root"),section,isAdmin());
  if(section==="notifications") mountNotifications(screen.querySelector("#notifications-root"),user,profile);
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
+ if(section==="answered") mountAnsweredPrayers(screen.querySelector("#answered-root"),user,profile);
  if(section==="serve") mountServe(screen.querySelector("#serve-root"),user,profile);
  navTabs.forEach(b=>b.classList.toggle("active",b.dataset.tab===section));
  const bell=document.getElementById("notificationBell");
