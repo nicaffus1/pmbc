@@ -495,7 +495,7 @@ async function editShift(event){
  if(!roster){notice("Wait for the volunteer roster to load before changing capacity.",true);return;}
  if(capacity>0&&roster.length>capacity){notice("There are already more volunteers than that limit.",true);return;}
  if(capacity!==(existing.capacity||0))changes.capacity=capacity;
- if(capacity>0&&!Number.isInteger(existing.signupCount))changes.signupCount=roster.length;
+ if(capacity>0&&((existing.capacity||0)===0||!Number.isInteger(existing.signupCount)))changes.signupCount=roster.length;
  if(startsAt!==existing.startsAt)changes.startsAt=startsAt;
  if(endsAt!==existing.endsAt)changes.endsAt=endsAt;
  if(notes!==(existing.notes||""))changes.notes=notes;
