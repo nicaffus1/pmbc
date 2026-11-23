@@ -62,7 +62,7 @@ export function mountVideos(all=false,admin=false){
  const node=document.querySelector(section);if(!node)return;
  if(cache&&Date.now()-updated<15*60*1000){show(section,all,admin,identity);return;}
  if(!/^https:\/\/[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev\/?$/i.test(PUSH_SENDER_URL)){
-  show(section,all);return;
+  show(section,all,admin,identity);return;
  }
  abort=new AbortController();
  fetch(PUSH_SENDER_URL.replace(/\/$/,"")+"/videos",{signal:abort.signal})
@@ -73,6 +73,6 @@ export function mountVideos(all=false,admin=false){
    cache={videos:data.videos};updated=Date.now();
    if(active===identity)show(section,all,admin,identity);
   }).catch(error=>{
-   if(error.name!=="AbortError"&&active===identity)show(section,all);
+   if(error.name!=="AbortError"&&active===identity)show(section,all,admin,identity);
   });
 }
