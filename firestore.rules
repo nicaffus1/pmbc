@@ -594,6 +594,55 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Member help board; offers are only visible to the requester, admins, or the volunteer.
+    match /helpRequests/{requestId} {
+      function validHelp(data) {
+        return data.keys().hasOnly(['title','details','category','authorId','authorName','status','createdAt','updatedAt'])
+          && data.keys().hasAll(['title','details','category','authorId','authorName','status','createdAt','updatedAt'])
+          && data.title is string && data.title.size() >= 3 && data.title.size() <= 120
+          && data.details is string && data.details.size() >= 5 && data.details.size() <= 800
+          && data.category in ['Meals','Transportation','Home or yard','Other']
+          && data.authorId is string && data.authorName is string
+          && data.authorName.size() >= 2 && data.authorName.size() <= 80
+          && data.status in ['open','completed']
+          && data.createdAt is timestamp && data.updatedAt == request.time;
+      }
+      allow get, list: if approvedMember() &&
+        (resource.data.status == 'open' || resource.data.authorId == request.auth.uid || isAdmin());
+      allow create: if approvedMember() && validHelp(request.resource.data)
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorName == get(userPath(request.auth.uid)).data.displayName
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdAt == request.time;
+      allow update: if approvedMember() &&
+        (resource.data.authorId == request.auth.uid || isAdmin())
+        && validHelp(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+        && resource.data.status == 'open'
+        && request.resource.data.status == 'completed'
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+
+      match /offers/{memberId} {
+        function parentHelp() {
+          return get(/databases/$(database)/documents/helpRequests/$(requestId)).data;
+        }
+        allow get, list: if approvedMember() &&
+          (request.auth.uid == memberId || parentHelp().authorId == request.auth.uid || isAdmin());
+        allow create: if approvedMember()
+          && request.auth.uid == memberId
+          && parentHelp().status == 'open'
+          && parentHelp().authorId != request.auth.uid
+          && request.resource.data.keys().hasOnly(['memberId','memberName','createdAt'])
+          && request.resource.data.keys().hasAll(['memberId','memberName','createdAt'])
+          && request.resource.data.memberId == request.auth.uid
+          && request.resource.data.memberName == get(userPath(request.auth.uid)).data.displayName
+          && request.resource.data.createdAt == request.time;
+        allow delete: if approvedMember() && request.auth.uid == memberId;
+        allow update: if false;
+      }
+    }
+
     // No access to other collections until they have dedicated rules.
     match /{document=**} { allow read, write: if false; }
   }
