@@ -496,3 +496,52 @@ html.dark-mode{color-scheme:dark;background:#0b1420;color:#e3edf5}
 .dark-mode .sermon-manager{background:#192a3c;border-color:#344b5e}
 .dark-mode .sermon-topic{background:#254b60;color:#d9f4fb}
 @media(max-width:380px){.sermon-filters{grid-template-columns:1fr}.sermon-filters label:first-child{grid-column:auto}}
+
+/* Sermons page: deliberate section rhythm and phone-first cards. */
+.videos-page{padding-bottom:30px}
+.videos-page>.eyebrow{display:block;margin-bottom:7px}
+.videos-page>h1{margin:0 0 8px;font-size:clamp(26px,6vw,32px);line-height:1.18;letter-spacing:-.025em}
+.videos-page>.muted{margin:0 0 27px;line-height:1.55}
+#videos-page-list>section{margin:0 0 34px}
+#videos-page-list>section>h2{font-size:19px;line-height:1.3;letter-spacing:-.012em;margin:0 0 16px}
+#videos-page-list .sermon-featured{margin:0 0 36px;padding:0 0 29px;border-bottom:1px solid #e0e9ef}
+#videos-page-list .sermon-featured .video-grid{grid-template-columns:minmax(0,1fr);gap:0}
+#videos-page-list .sermon-featured .video-card{max-width:none}
+#videos-page-list .video-grid{grid-template-columns:minmax(0,1fr);gap:14px}
+#videos-page-list .video-card{display:block;border-radius:15px;overflow:hidden;box-shadow:0 2px 9px rgba(19,48,72,.055)}
+#videos-page-list .video-card>a{display:block;color:inherit;text-decoration:none}
+#videos-page-list .video-thumbnail{aspect-ratio:16/9}
+#videos-page-list .video-info{padding:14px 15px 16px;gap:7px}
+#videos-page-list .video-info strong{font-size:15px;line-height:1.42;-webkit-line-clamp:3}
+#videos-page-list .video-info>span{font-size:12px;line-height:1.45}
+#videos-page-list .sermon-tags{margin-top:3px;gap:6px}
+#videos-page-list .sermon-topic{font-size:11px;line-height:1.35;padding:4px 9px}
+#videos-page-list .sermon-filters{gap:13px;margin:0 0 21px;padding:15px;background:#f2f7fa;border:1px solid #e0eaf0;border-radius:15px}
+#videos-page-list .sermon-filters label{gap:8px;font-size:12px;line-height:1.4}
+#videos-page-list .sermon-filters .field{min-height:43px;margin:0;font-size:14px;border-radius:9px}
+#videos-page-list .sermon-playlists{margin:38px 0}
+#videos-page-list .sermon-playlist-group{margin:0 0 27px;padding-bottom:24px;border-bottom:1px solid #e0e9ef}
+#videos-page-list .sermon-playlist-group:last-child{border-bottom:0;padding-bottom:0}
+#videos-page-list .sermon-playlist-group h3{margin:0 0 14px;font-size:16px;line-height:1.35}
+#videos-page-list .sermon-manager{margin:38px 0 28px;padding:0;border-radius:15px;overflow:hidden}
+#videos-page-list .sermon-manager>summary{padding:17px 18px;font-size:15px;line-height:1.45}
+#videos-page-list .sermon-manager[open]{padding-bottom:18px}
+#videos-page-list .sermon-manager[open]>summary{border-bottom:1px solid #dce7ed;margin-bottom:17px}
+#videos-page-list .sermon-manager>.section-note,#videos-page-list .sermon-manager>label,#videos-page-list .sermon-manager>form{margin-left:18px;margin-right:18px}
+#videos-page-list .sermon-manager>.section-note{line-height:1.55;margin-bottom:16px}
+#videos-page-list .sermon-manager label{gap:7px;margin-bottom:3px;line-height:1.4}
+#videos-page-list .sermon-manager form{margin-top:19px;gap:16px}
+#videos-page-list .sermon-manager .field{min-height:42px;border-radius:9px;font-size:14px}
+#videos-page-list .sermon-manager textarea.field{min-height:90px}
+#videos-page-list .sermon-manager button[type=submit]{margin-top:3px}
+#videos-page-list .sermon-archive{margin:34px 0 10px;padding:20px;border-radius:15px}
+#videos-page-list .sermon-archive h2{margin-bottom:9px}
+#videos-page-list .sermon-archive p{margin-bottom:15px;line-height:1.6}
+.dark-mode #videos-page-list .sermon-featured,.dark-mode #videos-page-list .sermon-playlist-group{border-color:#344b5e}
+.dark-mode #videos-page-list .sermon-filters{background:#1b3140;border-color:#344b5e}
+.dark-mode #videos-page-list .sermon-manager[open]>summary{border-color:#344b5e}
+@media(min-width:470px){
+ #videos-page-list .video-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+ #videos-page-list .sermon-featured .video-grid{grid-template-columns:minmax(0,1fr)}
+ #videos-page-list .sermon-featured .video-card{max-width:420px}
+}
