@@ -535,6 +535,57 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Curated public-facing mission profiles and Bible studies.
+    // Unpublished drafts are readable only by approved administrators.
+    match /missionProfiles/{resourceId} {
+      function validMission(data) {
+        return data.keys().hasOnly(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.keys().hasAll(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.title is string && data.title.size() >= 2 && data.title.size() <= 140
+          && data.category is string && data.category.size() <= 160
+          && data.summary is string && data.summary.size() <= 700
+          && data.body is string && data.body.size() >= 3 && data.body.size() <= 4000
+          && data.url is string && data.url.size() <= 500
+          && (data.url == '' || data.url.matches('^https://[^ ]+
+    match /{document=**} { allow read, write: if false; }
+  }
+}
+))
+          && data.published is bool
+          && data.createdAt is timestamp && data.updatedAt == request.time;
+      }
+      allow get, list: if isAdmin() || (resource != null && resource.data.published == true);
+      allow create: if isAdmin() && validMission(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validMission(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+    match /bibleStudies/{resourceId} {
+      function validStudy(data) {
+        return data.keys().hasOnly(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.keys().hasAll(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.title is string && data.title.size() >= 2 && data.title.size() <= 140
+          && data.category is string && data.category.size() <= 160
+          && data.summary is string && data.summary.size() <= 700
+          && data.body is string && data.body.size() >= 3 && data.body.size() <= 4000
+          && data.url is string && data.url.size() <= 500
+          && (data.url == '' || data.url.matches('^https://[^ ]+
+    match /{document=**} { allow read, write: if false; }
+  }
+}
+))
+          && data.published is bool
+          && data.createdAt is timestamp && data.updatedAt == request.time;
+      }
+      allow get, list: if isAdmin() || (resource != null && resource.data.published == true);
+      allow create: if isAdmin() && validStudy(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validStudy(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+
     // No access to other collections until they have dedicated rules.
     match /{document=**} { allow read, write: if false; }
   }
