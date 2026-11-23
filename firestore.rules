@@ -529,6 +529,184 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Published resources may be read by visitors; drafts by admins only.
+    match /missionProfiles/{resourceId} {
+      function validMission(data) {
+        return data.keys().hasOnly(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.keys().hasAll(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.title is string && data.title.size() >= 2 && data.title.size() <= 140
+          && data.category is string && data.category.size() <= 160
+          && data.summary is string && data.summary.size() <= 700
+          && data.body is string && data.body.size() >= 3 && data.body.size() <= 4000
+          && data.url is string && data.url.size() <= 500
+          && (data.url == '' || data.url.matches('^https://[^ ]+$'))
+          && data.published is bool
+          && data.createdAt is timestamp && data.updatedAt == request.time;
+      }
+      allow get, list: if isAdmin() || resource.data.published == true;
+      allow create: if isAdmin() && validMission(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validMission(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+
+    match /bibleStudies/{resourceId} {
+      function validStudy(data) {
+        return data.keys().hasOnly(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.keys().hasAll(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.title is string && data.title.size() >= 2 && data.title.size() <= 140
+          && data.category is string && data.category.size() <= 160
+          && data.summary is string && data.summary.size() <= 700
+          && data.body is string && data.body.size() >= 3 && data.body.size() <= 4000
+          && data.url is string && data.url.size() <= 500
+          && (data.url == '' || data.url.matches('^https://[^ ]+$'))
+          && data.published is bool
+          && data.createdAt is timestamp && data.updatedAt == request.time;
+      }
+      allow get, list: if isAdmin() || resource.data.published == true;
+      allow create: if isAdmin() && validStudy(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validStudy(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+
+    // Member directory is opt-in; membership records themselves are never exposed.
+    match /memberDirectory/{memberId} {
+      function validListing(data) {
+        return data.keys().hasOnly(['displayName','phone','contactEmail','showPhone','showEmail','visible','updatedAt'])
+          && data.keys().hasAll(['displayName','phone','contactEmail','showPhone','showEmail','visible','updatedAt'])
+          && data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 80
+          && data.phone is string && data.phone.size() <= 30
+          && data.contactEmail is string && data.contactEmail.size() <= 160
+          && data.showPhone is bool && data.showEmail is bool && data.visible is bool
+          && (data.showPhone || data.phone == '')
+          && (data.showEmail || data.contactEmail == '')
+          && data.updatedAt == request.time;
+      }
+      allow get: if approvedMember() && (request.auth.uid == memberId || resource.data.visible == true);
+      allow list: if approvedMember() && resource.data.visible == true;
+      allow create, update: if approvedMember() && request.auth.uid == memberId
+        && validListing(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Member help board; offers are only visible to the requester, admins, or the volunteer.
+    match /helpRequests/{requestId} {
+      function validHelp(data) {
+        return data.keys().hasOnly(['title','details','category','authorId','authorName','status','createdAt','updatedAt'])
+          && data.keys().hasAll(['title','details','category','authorId','authorName','status','createdAt','updatedAt'])
+          && data.title is string && data.title.size() >= 3 && data.title.size() <= 120
+          && data.details is string && data.details.size() >= 5 && data.details.size() <= 800
+          && data.category in ['Meals','Transportation','Home or yard','Other']
+          && data.authorId is string && data.authorName is string
+          && data.authorName.size() >= 2 && data.authorName.size() <= 80
+          && data.status in ['open','completed']
+          && data.createdAt is timestamp && data.updatedAt == request.time;
+      }
+      allow get, list: if approvedMember() &&
+        (resource.data.status == 'open' || resource.data.authorId == request.auth.uid || isAdmin());
+      allow create: if approvedMember() && validHelp(request.resource.data)
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorName == get(userPath(request.auth.uid)).data.displayName
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdAt == request.time;
+      allow update: if approvedMember() &&
+        (resource.data.authorId == request.auth.uid || isAdmin())
+        && validHelp(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+        && resource.data.status == 'open'
+        && request.resource.data.status == 'completed'
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+
+      match /offers/{memberId} {
+        function parentHelp() {
+          return get(/databases/$(database)/documents/helpRequests/$(requestId)).data;
+        }
+        allow get, list: if approvedMember() &&
+          (request.auth.uid == memberId || parentHelp().authorId == request.auth.uid || isAdmin());
+        allow create: if approvedMember()
+          && request.auth.uid == memberId
+          && parentHelp().status == 'open'
+          && parentHelp().authorId != request.auth.uid
+          && request.resource.data.keys().hasOnly(['memberId','memberName','createdAt'])
+          && request.resource.data.keys().hasAll(['memberId','memberName','createdAt'])
+          && request.resource.data.memberId == request.auth.uid
+          && request.resource.data.memberName == get(userPath(request.auth.uid)).data.displayName
+          && request.resource.data.createdAt == request.time;
+        allow delete: if approvedMember() && request.auth.uid == memberId;
+        allow update: if false;
+      }
+    }
+
+    match /ministryGroups/{resourceId} {
+      function validEntry(data) {
+        return data.keys().hasOnly(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.keys().hasAll(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.title is string && data.title.size() >= 2 && data.title.size() <= 140
+          && data.category is string && data.category.size() <= 160
+          && data.summary is string && data.summary.size() <= 700
+          && data.body is string && data.body.size() >= 3 && data.body.size() <= 4000
+          && data.url is string && data.url.size() <= 500
+          && (data.url == '' || data.url.matches('^https://[^ ]+$'))
+          && data.published is bool && data.createdAt is timestamp
+          && data.updatedAt == request.time;
+      }
+      allow get, list: if isAdmin() || (approvedMember() && resource.data.published == true);
+      allow create: if isAdmin() && validEntry(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validEntry(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+
+    match /hymnCatalog/{resourceId} {
+      function validEntry(data) {
+        return data.keys().hasOnly(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.keys().hasAll(['title','category','summary','body','url','published','createdAt','updatedAt'])
+          && data.title is string && data.title.size() >= 2 && data.title.size() <= 140
+          && data.category is string && data.category.size() <= 160
+          && data.summary is string && data.summary.size() <= 700
+          && data.body is string && data.body.size() >= 3 && data.body.size() <= 4000
+          && data.url is string && data.url.size() <= 500
+          && (data.url == '' || data.url.matches('^https://[^ ]+$'))
+          && data.published is bool && data.createdAt is timestamp
+          && data.updatedAt == request.time;
+      }
+      allow get, list: if isAdmin() || (true && resource.data.published == true);
+      allow create: if isAdmin() && validEntry(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validEntry(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+
+    // Care and visitor follow-up records are never publicly readable.
+    match /careTasks/{taskId} {
+      function validCare(data) {
+        return data.keys().hasOnly(['subject','action','dueDate','status','createdAt','updatedAt'])
+          && data.keys().hasAll(['subject','action','dueDate','status','createdAt','updatedAt'])
+          && data.subject is string && data.subject.size() >= 2 && data.subject.size() <= 100
+          && data.action is string && data.action.size() >= 3 && data.action.size() <= 500
+          && data.dueDate is string
+          && (data.dueDate == '' || data.dueDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))
+          && data.status in ['open','done']
+          && data.createdAt is timestamp && data.updatedAt == request.time;
+      }
+      allow get, list: if isAdmin();
+      allow create: if isAdmin() && validCare(request.resource.data)
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validCare(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+        && resource.data.status == 'open'
+        && request.resource.data.status == 'done'
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+
     // No access to other collections until they have dedicated rules.
     match /{document=**} { allow read, write: if false; }
   }

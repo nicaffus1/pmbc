@@ -22,6 +22,26 @@ const {doc,collection,getDoc,getDocs,setDoc,serverTimestamp,query,where} = requi
   const member=env.authenticatedContext('member-user').firestore();
   const pending=env.authenticatedContext('pending-user').firestore();
   const admin=env.authenticatedContext('admin-user').firestore();
+  await env.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore();
+    for (const [path, data] of [
+      ['memberDirectory/listed', {visible:true}], ['memberDirectory/hidden', {visible:false}],
+      ['careTasks/private', {}], ['ministryGroups/class', {published:true}],
+      ['missionProfiles/draft', {published:false}], ['helpRequests/need', {authorId:'member-user',status:'open'}],
+      ['helpRequests/need/offers/helper', {memberId:'helper'}]
+    ]) await setDoc(doc(db,path),data);
+  });
+  for (const db of [guest,pending]) {
+    for (const path of ['memberDirectory/listed','careTasks/private','ministryGroups/class','helpRequests/need'])
+      await assertFails(getDoc(doc(db,path)));
+  }
+  await assertSucceeds(getDoc(doc(member,'memberDirectory/listed')));
+  await assertFails(getDoc(doc(member,'memberDirectory/hidden')));
+  await assertFails(getDoc(doc(member,'careTasks/private')));
+  await assertSucceeds(getDoc(doc(admin,'careTasks/private')));
+  await assertFails(getDoc(doc(guest,'missionProfiles/draft')));
+  await assertSucceeds(getDoc(doc(member,'helpRequests/need/offers/helper')));
+  await assertFails(getDocs(collection(member,'memberDirectory')));
   const bulletin=doc(guest,'churchBulletins','current');
   const published=ctx=>query(collection(ctx,'churchBulletins'),where('published','==',true));
   await assertFails(getDoc(bulletin));
