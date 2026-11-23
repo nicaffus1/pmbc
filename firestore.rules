@@ -448,6 +448,32 @@ service cloud.firestore {
       }
     }
 
+    // Sermon metadata is visible to everyone; only approved admins can edit it.
+    match /sermonLibrary/{sermonId} {
+      function validSermon(data) {
+        return sermonId.size() == 11
+          && sermonId.matches('^[A-Za-z0-9_-]+
+    match /{document=**} { allow read, write: if false; }
+  }
+}
+)
+          && data.keys().hasOnly(['id','title','speaker','scripture','topics','playlists','description','published','updatedAt'])
+          && data.keys().hasAll(['id','title','speaker','scripture','topics','playlists','description','published','updatedAt'])
+          && data.id == sermonId
+          && data.title is string && data.title.size() > 0 && data.title.size() <= 160
+          && data.speaker is string && data.speaker.size() <= 80
+          && data.scripture is string && data.scripture.size() <= 120
+          && data.description is string && data.description.size() <= 1500
+          && data.published is string && data.published.size() <= 50
+          && data.topics is list && data.topics.size() <= 12
+          && data.playlists is list && data.playlists.size() <= 12
+          && data.updatedAt == request.time;
+      }
+      allow get, list: if true;
+      allow create, update: if isAdmin() && validSermon(request.resource.data);
+      allow delete: if false;
+    }
+
     // No access to other collections until they have dedicated rules.
     match /{document=**} { allow read, write: if false; }
   }
