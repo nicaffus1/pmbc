@@ -1,0 +1,10 @@
+/* Bulletin and welcome additions */
+.feature-link{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #dbe6ef;border-radius:15px;background:#f7fafc;padding:16px;text-decoration:none;color:inherit;margin:12px 0}
+.feature-link strong{display:block;color:#0a2f57}.feature-link span{display:block;font-size:13px;color:#5c7083;margin-top:4px}
+.feature-link .arrow{font-size:22px;color:#0b6e83}
+.bulletin-head{margin-bottom:16px}.bulletin-paper{padding:22px}.bulletin-theme{font-size:24px;margin:8px 0 24px}
+.bulletin-part{border-top:1px solid #e4ebf1;padding:15px 0}.bulletin-part h2{margin:0 0 9px;font-size:15px}.bulletin-lines{line-height:1.8;overflow-wrap:anywhere;white-space:normal}
+.bulletin-editor summary{cursor:pointer;font-weight:700}.bulletin-editor form{margin-top:17px}.bulletin-check{display:flex;align-items:center;gap:9px}
+.visitor-intro{margin-bottom:18px}.visitor-details{margin-top:12px}.visitor-details summary{cursor:pointer;font-weight:700;padding:8px 0}.visitor-details p{margin:6px 0 14px}
+.visitor-action{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.visitor-action a{text-decoration:none;text-align:center}
+.dark-mode .feature-link{background:#182b3c;border-color:#33485a}.dark-mode .feature-link strong,.dark-mode .bulletin-theme{color:#e0efff}.dark-mode .feature-link span{color:#a1b8ca}.dark-mode .bulletin-part{border-color:#34495a}
