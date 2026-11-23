@@ -2,6 +2,7 @@
 import { auth, db } from "./firebase.js";
 import { mountPrayer, unmountPrayer } from "./prayer.js";
 import { mountBulletin, unmountBulletin } from "./bulletin.js";
+import { mountResourceHub, unmountResourceHub } from "./resource-hub.js";
 import { mountServe, unmountServe } from "./serve.js";
 import { mountHomeUpdates, unmountHomeUpdates } from "./home-updates.js";
 import { mountNotifications, unmountNotifications } from "./notifications.js";
@@ -166,6 +167,8 @@ function home() {
  </section>`;
 }
 function bulletin(){return '<div id="bulletin-root"></div>';}
+function missions(){return '<div id="resource-root"></div>';}
+function studies(){return '<div id="resource-root"></div>';}
 function visitor(){return `<section class="visitor-intro"><span class="eyebrow">Welcome to Providence</span><h1>Plan Your Visit</h1><p>We would be glad to worship with you at Providence Missionary Baptist Church in Center, Texas.</p></section>
  <article class="card"><h2>Come Visit</h2><p><strong>Providence Missionary Baptist Church</strong></p>
  <p>1129 CR 1265, Center, TX</p>
@@ -237,6 +240,8 @@ function more() {
  </section>
  <a class="feature-link" href="#bulletin"><div><strong>This Week’s Bulletin</strong><span>Scripture, order of worship, and announcements</span></div><b class="arrow" aria-hidden="true">›</b></a>
  <a class="feature-link" href="#visitor"><div><strong>New to Providence?</strong><span>Plan a visit and learn what to expect</span></div><b class="arrow" aria-hidden="true">›</b></a>
+ <a class="feature-link" href="#missions"><div><strong>Missions & Missionaries</strong><span>Updates and ways to pray for supported ministries</span></div><b class="arrow" aria-hidden="true">›</b></a>
+ <a class="feature-link" href="#studies"><div><strong>Bible Study & Discipleship</strong><span>Scripture and questions for growing in faith</span></div><b class="arrow" aria-hidden="true">›</b></a>
  ${givingCard()}
  ${contactUs()}
  ${churchInfo()}`;
@@ -268,13 +273,14 @@ function adminView() {
  <button class="button outline" id="backToAccount">Back to Account</button>
  ${list || '<p class="muted">No pending membership requests.</p>'}`;
 }
-const views = {home, prayer, serve, more, notifications, videos, bulletin, visitor, account:accountPage};
+const views = {home, prayer, serve, more, notifications, videos, bulletin, visitor, missions, studies, account:accountPage};
 function navigate(next) {
  section = views[next]?next:"home";render();
 }
 function render(){
  unmountPrayer();
  unmountBulletin();
+ unmountResourceHub();
  unmountServe();
  unmountHomeUpdates();
  unmountNotifications();
@@ -285,6 +291,7 @@ function render(){
  if(section==="home"){ mountHomeUpdates(screen,user,profile);mountDailyVerse();mountFacebookPosts();mountVideos(false); }
  if(section==="videos") mountVideos(true,isAdmin());
  if(section==="bulletin") mountBulletin(screen.querySelector("#bulletin-root"),isAdmin());
+ if(section==="missions"||section==="studies") mountResourceHub(screen.querySelector("#resource-root"),section,isAdmin());
  if(section==="notifications") mountNotifications(screen.querySelector("#notifications-root"),user,profile);
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
  if(section==="serve") mountServe(screen.querySelector("#serve-root"),user,profile);
