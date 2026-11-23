@@ -42,8 +42,8 @@ async function save(e){
 export function mountBulletin(target,isAdmin){
  unmountBulletin();root=target;admin=!!isAdmin;
  root.innerHTML='<p class="muted">Loading bulletin…</p>';
- const target=admin?doc(db,"churchBulletins","current"):query(collection(db,"churchBulletins"),where("published","==",true));
- stop=onSnapshot(target,snap=>{
+ const source=admin?doc(db,"churchBulletins","current"):query(collection(db,"churchBulletins"),where("published","==",true));
+ stop=onSnapshot(source,snap=>{
   latest=admin?(snap.exists()?snap.data():null):(snap.docs.find(d=>d.id==="current")?.data()||null);
   draw();
  },err=>{
