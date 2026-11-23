@@ -685,6 +685,30 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Care and visitor follow-up records are never publicly readable.
+    match /careTasks/{taskId} {
+      function validCare(data) {
+        return data.keys().hasOnly(['subject','action','dueDate','status','createdAt','updatedAt'])
+          && data.keys().hasAll(['subject','action','dueDate','status','createdAt','updatedAt'])
+          && data.subject is string && data.subject.size() >= 2 && data.subject.size() <= 100
+          && data.action is string && data.action.size() >= 3 && data.action.size() <= 500
+          && data.dueDate is string
+          && (data.dueDate == '' || data.dueDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))
+          && data.status in ['open','done']
+          && data.createdAt is timestamp && data.updatedAt == request.time;
+      }
+      allow get, list: if isAdmin();
+      allow create: if isAdmin() && validCare(request.resource.data)
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && validCare(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+        && resource.data.status == 'open'
+        && request.resource.data.status == 'done'
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+
     // No access to other collections until they have dedicated rules.
     match /{document=**} { allow read, write: if false; }
   }
