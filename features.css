@@ -23,3 +23,16 @@
 .dark-mode .resource-details{border-color:#32485a}.dark-mode .resource-details summary,.dark-mode .resource-manage summary,.dark-mode .resource-create summary{color:#8bd7e5}
 
 .answered-card h2{margin:9px 0 12px;font-size:19px}.answered-card p{line-height:1.7;overflow-wrap:anywhere}.answered-card small{display:inline-block;margin-top:6px}
+
+/* Directory, help board and admin sections */
+.more-community-menu h2{margin-top:0}.more-community-menu .feature-link{margin:7px 0}
+.more-resources>summary,.directory-editor>summary{cursor:pointer;font-weight:700;padding:6px 0}
+.more-resources[open] .feature-link{margin:9px 0}
+.directory-person strong{font-size:16px}.directory-person p{margin:7px 0}
+.help-item h2{font-size:18px;margin:10px 0}
+.help-volunteers{border-top:1px solid #e5ecf1;margin-top:14px;padding-top:14px}
+.help-volunteers ul{padding-left:22px;line-height:1.8}
+.help-item [data-help-close]{margin-top:12px}
+.admin-links{display:grid;gap:6px}
+.admin-entry{border-color:#6a9bac}
+.dark-mode .help-volunteers{border-color:#34495a}
