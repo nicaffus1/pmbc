@@ -142,8 +142,8 @@ function drawList(){
      <span class="pill ${p.visibility==="leadership"?"warning":""}">${p.visibility==="leadership"?"Private":"Church Members"}</span></div>
    <p class="section-note">Shared ${formatDate(p.createdAt)}${canEdit?" by "+esc(p.authorName):""}</p>
    <p class="prayer-body">${escapeRequestText(p.text)}</p>
-   ${isAdmin()?`<p class="prayer-total">${total===undefined?"Loading prayer count…":total+" prayers recorded"}</p>
-     <button class="button outline" type="button" data-edit-prayer="${esc(selectedPrayerId)}">Edit / Answer / Remove Request</button>`:""}
+   ${isAdmin()?`<p class="prayer-total">${total===undefined?"Loading prayer count…":total+" prayers recorded"}</p>`:""}
+   ${canEdit?`<button class="button outline" type="button" data-edit-prayer="${esc(selectedPrayerId)}">Edit / Answer / Remove Request</button>`:""}
  </article>`;
 }
 function syncPrayed(){
