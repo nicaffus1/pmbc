@@ -3,11 +3,13 @@ import {db} from "./firebase.js";
 import {collection,addDoc,doc,updateDoc,onSnapshot,query,where,serverTimestamp} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 const types={
  missions:{collection:"missionProfiles",heading:"Missions & Missionaries",eyebrow:"Across the world",intro:"Pray for the missionaries and ministries supported by Providence.",singular:"Missionary or ministry",empty:"No missionary updates have been published yet.",category:"Ministry location or field",detail:"Latest update",urlLabel:"Newsletter / ministry link"},
- studies:{collection:"bibleStudies",heading:"Bible Study & Discipleship",eyebrow:"Grow in the Word",intro:"Read Scripture together and use these studies for personal and group discipleship.",singular:"Bible study",empty:"No Bible studies have been published yet.",category:"Scripture passage",detail:"Study and reflection questions",urlLabel:"Optional study resource"}
+ studies:{collection:"bibleStudies",heading:"Bible Study & Discipleship",eyebrow:"Grow in the Word",intro:"Read Scripture together and use these studies for personal and group discipleship.",singular:"Bible study",empty:"No Bible studies have been published yet.",category:"Scripture passage",detail:"Study and reflection questions",urlLabel:"Optional study resource"},
+ groups:{collection:"ministryGroups",heading:"Ministry Groups",eyebrow:"Church ministries",intro:"Updates and information for approved members of Providence.",singular:"ministry group",empty:"No ministry group information has been posted yet.",category:"Group or class",detail:"Schedule and ministry information",urlLabel:"Optional ministry link",membersOnly:true},
+ hymns:{collection:"hymnCatalog",heading:"Digital Hymnal",eyebrow:"Songs of faith",intro:"A directory of hymns and songs used in our church. Lyrics are not reproduced unless separately cleared for use.",singular:"hymn",empty:"No hymns have been added yet.",category:"Hymn number, theme or Scripture",detail:"About this hymn (do not paste copyrighted lyrics)",urlLabel:"Licensed or public-domain song resource"}
 };
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const link=x=>{try{const u=new URL(x);return u.protocol==="https:"?u.href:"";}catch{return "";}};
-let stop=null,root=null,mode="",admin=false,items=[];
+let stop=null,root=null,mode="",admin=false,approved=false,items=[];
 function render(){
  if(!root)return;
  const t=types[mode];
@@ -55,14 +57,15 @@ async function save(e){
  }catch(err){status.textContent="Could not save: "+(err?.code||"check Firebase permissions");}
  finally{btn.disabled=false;}
 }
-export function mountResourceHub(target,type,isAdmin){
+export function mountResourceHub(target,type,isAdmin,isApproved=false){
  unmountResourceHub();
  if(!types[type]||!target)return;
- root=target;mode=type;admin=!!isAdmin;
+ root=target;mode=type;admin=!!isAdmin;approved=!!isApproved;
+ if(types[type].membersOnly&&!approved){root.innerHTML='<h1>Ministry Groups</h1><article class="card">Sign in with an approved church account to see ministry group updates.</article>';return;}
  root.innerHTML='<p class="muted">Loading resources…</p>';
  const col=collection(db,types[type].collection);
  const q=admin?col:query(col,where("published","==",true));
  stop=onSnapshot(q,snap=>{items=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.title.localeCompare(b.title));render();},
  ()=>{if(root)root.innerHTML='<p class="error">Unable to load resources. Check your connection or the Firebase rules.</p>';});
 }
-export function unmountResourceHub(){if(stop){stop();stop=null;}root=null;items=[];mode="";admin=false;}
+export function unmountResourceHub(){if(stop){stop();stop=null;}root=null;items=[];mode="";admin=false;approved=false;}
