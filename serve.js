@@ -110,6 +110,7 @@ function shiftList(mid,pid){
         ${pendingWrites.has("shift:"+key)||(!signed&&(past||full))?"disabled":""}>
         ${signed?"✓ Signed Up — Cancel Shift":past?"Shift Ended":full?"Shift Full":"Sign Up for Shift"}
       </button>
+      ${signed?`<button class="button outline" type="button" data-calendar-shift data-mid="${esc(mid)}" data-pid="${esc(pid)}" data-sid="${esc(x.id)}">Add to Calendar</button>`:""}
     </div>
     ${admin()?`<details class="manage-menu" data-panel="manage-shift:${esc(mid)}:${esc(pid)}:${esc(x.id)}">
       <summary>Manage this shift</summary>
@@ -655,6 +656,27 @@ async function setArchived(type,mid,pid,sid,archive){
  }finally{pendingWrites.delete(key);}
 }
 
+function downloadShiftCalendar(button){
+ const {mid,pid,sid}=button.dataset;
+ const shift=shifts.get(positionKey(mid,pid))?.get(sid);
+ const position=positions.get(mid)?.get(pid);
+ if(!shift||!shiftJoined.get(shiftKey(mid,pid,sid)))return;
+ const line=value=>String(value||"").replace(/\\/g,"\\\\").replace(/\r?\n/g,"\\n").replace(/[,;]/g,c=>"\\"+c);
+ const date=value=>value.replace(/[-:]/g,"").replace("T","T")+"00";
+ const summary=line((position?.title||"Volunteer Shift")+" — Providence");
+ const description=line(shift.notes||"Providence Church volunteer shift");
+ const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
+ const content=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//PMBC//Volunteer Shifts//EN","BEGIN:VEVENT",
+  "UID:"+sid+"@pmbc.local","DTSTAMP:"+stamp,
+  "DTSTART;TZID=America/Chicago:"+date(shift.startsAt),
+  "DTEND;TZID=America/Chicago:"+date(shift.endsAt),
+  "SUMMARY:"+summary,"DESCRIPTION:"+description,"END:VEVENT","END:VCALENDAR",""].join("\r\n");
+ const url=URL.createObjectURL(new Blob([content],{type:"text/calendar;charset=utf-8"}));
+ const a=document.createElement("a");a.href=url;a.download="providence-volunteer-shift.ics";
+ document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),30000);
+ notice("Calendar file created. Open it to add the shift to your calendar.");
+}
 function onClick(event){
  const removeButton=event.target.closest("[data-archive-item]");
  if(removeButton){
@@ -666,6 +688,8 @@ function onClick(event){
    const {mid,pid,sid,restoreItem}=restoreButton.dataset;
    setArchived(restoreItem,mid,pid,sid,false);return;
  }
+ const calendar=event.target.closest("[data-calendar-shift]");
+ if(calendar){downloadShiftCalendar(calendar);return;}
  const share=event.target.closest("[data-share-roster]");
  if(share){shareRoster(share);return;}
  const shiftButton=event.target.closest("[data-toggle-shift]");
