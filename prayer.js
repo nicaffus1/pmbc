@@ -79,7 +79,7 @@ function baseScreen(){
  </details>
  <section aria-label="Church prayer list">
    <h2>Church Prayer List</h2>
-   <p class="prayer-list-guidance">A checkmark means you prayed within the past hour. Your previous prayers stay counted.</p>
+   <p class="prayer-list-guidance">A checkmark means you prayed within the past hour. You can record another prayer after one hour.</p>
    <div id="prayerList" aria-live="polite"><p class="muted">Loading requests…</p></div>
  </section>
  <section id="prayerDetail" aria-live="polite"></section>`;
@@ -112,7 +112,7 @@ function drawList(){
  }
  list.innerHTML=visible.map(([id,p])=>{
    const mine=p.authorId===currentUser.uid;
-   const canViewTotal=mine||isAdmin();
+   const canViewTotal=isAdmin();
    const waiting=cooldownRemaining(id)>0;
    const total=prayerTotals.get(id);
    return `<div class="prayer-list-row ${id===selectedPrayerId?"selected":""}">
@@ -142,7 +142,7 @@ function drawList(){
      <span class="pill ${p.visibility==="leadership"?"warning":""}">${p.visibility==="leadership"?"Private":"Church Members"}</span></div>
    <p class="section-note">Shared ${formatDate(p.createdAt)}${canEdit?" by "+esc(p.authorName):""}</p>
    <p class="prayer-body">${escapeRequestText(p.text)}</p>
-   ${canEdit?`<p class="prayer-total">${total===undefined?"Loading prayer count…":total+" prayers recorded"}</p>
+   ${isAdmin()?`<p class="prayer-total">${total===undefined?"Loading prayer count…":total+" prayers recorded"}</p>
      <button class="button outline" type="button" data-edit-prayer="${esc(selectedPrayerId)}">Edit / Answer / Remove Request</button>`:""}
  </article>`;
 }
@@ -173,7 +173,7 @@ function syncPrayed(){
 function syncTotals(){
  const keep=new Set();
  for(const [id,p] of activeRequests()){
-   if(p.authorId!==currentUser.uid&&!isAdmin())continue;
+   if(!isAdmin())continue;
    keep.add(id);
    if(totalListeners.has(id))continue;
    const marker=session;
@@ -336,7 +336,7 @@ async function markPrayed(id){
    }else{
      await setDoc(vote,{count:1,createdAt:serverTimestamp(),lastPrayedAt:serverTimestamp()});
    }
-   setNotice("Prayer recorded. You can pray again in one hour; the total keeps growing.");
+   setNotice("Prayer recorded. You can pray again in one hour.");
  }catch(err){
    setNotice(err.code==="permission-denied"
      ?"Prayer couldn't be recorded. You may still be within the one-hour limit, or the updated Firebase rules need publishing."
