@@ -114,14 +114,9 @@ function churchInfo(){
  </section>`;
 }
 function websiteHub(){
- return `<section class="website-hub" aria-label="Providence website and visitor resources">
-  <div class="home-heading"><h2>Church Website</h2><a href="https://www.providence.center/" target="_blank" rel="noopener noreferrer" class="website-hub-link">Visit site ↗</a></div>
-  <p class="website-hub-intro">Looking for service information or learning about Providence? Find everything on our main website.</p>
-  <div class="website-hub-grid">
-   <a href="https://www.providence.center/about-us" target="_blank" rel="noopener noreferrer"><span class="website-hub-icon" aria-hidden="true">⌂</span><strong>About Us</strong><small>Our beliefs and church</small></a>
-   <a href="https://www.providence.center/calendar" target="_blank" rel="noopener noreferrer"><span class="website-hub-icon" aria-hidden="true">▦</span><strong>Church Calendar</strong><small>Public services &amp; events</small></a>
-   <a href="https://www.providence.center/next-steps" target="_blank" rel="noopener noreferrer"><span class="website-hub-icon" aria-hidden="true">♡</span><strong>Next Steps</strong><small>Visit, connect, belong</small></a>
-  </div>
+ return `<section class="website-quick-link" aria-label="Church website">
+  <div><strong>Looking for church information?</strong><span>Service details, beliefs, and planning a visit</span></div>
+  <a href="https://www.providence.center/" target="_blank" rel="noopener noreferrer">Church Website ↗</a>
  </section>`;
 }
 function facebookUpdates(){
