@@ -477,3 +477,22 @@ html.dark-mode{color-scheme:dark;background:#0b1420;color:#e3edf5}
 .dark-mode .sermon-archive{background:#192a3c;border-color:#344b5e}
 
 .prayer-list-row > .prayer-selected-detail{flex:0 0 100%;box-sizing:border-box;margin:0;border:0;border-top:1px solid #e0eaf0;border-radius:0;padding:14px 16px;background:#f9fcfd}\n.dark-mode .prayer-list-row > .prayer-selected-detail{border-color:#385367;background:#1b3140}\n
+/* Sermon manager, topical browsing and curated playlists. */
+.sermon-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 18px}
+.sermon-filters label{font-size:12px;font-weight:700;display:flex;flex-direction:column;gap:6px}
+.sermon-filters label:first-child{grid-column:1/-1}
+.sermon-filters .field{width:100%;min-width:0}
+.sermon-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.sermon-topic{display:inline-block;font-size:10px;font-weight:650;border-radius:20px;padding:3px 8px;background:#e2f0f5;color:#165971}
+.sermon-playlists{margin:26px 0}
+.sermon-playlist-group{margin:14px 0 24px}
+.sermon-playlist-group h3{font-size:16px;margin:0 0 10px}
+.sermon-manager{margin:22px 0;padding:16px;border:1px solid #d7e5ed;border-radius:12px;background:#f6fafc}
+.sermon-manager summary{font-size:16px;font-weight:750;cursor:pointer}
+.sermon-manager label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700}
+.sermon-manager form{margin-top:14px}
+.sermon-manager input,.sermon-manager select,.sermon-manager textarea{width:100%}
+.sermon-manager textarea{resize:vertical}
+.dark-mode .sermon-manager{background:#192a3c;border-color:#344b5e}
+.dark-mode .sermon-topic{background:#254b60;color:#d9f4fb}
+@media(max-width:380px){.sermon-filters{grid-template-columns:1fr}.sermon-filters label:first-child{grid-column:auto}}
