@@ -13,8 +13,8 @@ let notices=new Map(),reads=new Map(),streams=new Map(),message="",error=false,w
 let deviceToken="";
 let inboxFilter="all";
 const senderConfigured=()=>/^https:\/\/[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev\/?$/i.test(PUSH_SENDER_URL.trim());
-async function sendPhonePush(id){
- if(!admin||!auth.currentUser)throw Error("An approved administrator must be signed in.");
+export async function sendPhonePush(id){
+ if(!auth.currentUser)throw Error("An approved administrator must be signed in.");
  if(!senderConfigured())throw Error("Phone sender is not connected yet. Follow PUSH_SENDER_SETUP.md to deploy it.");
  const idToken=await auth.currentUser.getIdToken();
  let offset=0,sent=0,failed=0,total=0,attempts=0;
@@ -62,7 +62,7 @@ function render(){
  list.innerHTML=showing.length?showing.map(([id,n])=>{const read=reads.has(id);
   return '<article class="card notification-entry '+(read?"read":"unread")+'">'+
    '<div class="notification-label">'+esc(labels[n.kind]||"General")+
-   (n.audience==="admins"?' · Admin only':n.audience==="person"?' · Personal reminder':"")+(read?"":" · New")+'</div>'+
+   (n.audience==="targeted"?" · Member message":n.audience==="admins"?' · Admin only':n.audience==="person"?' · Personal reminder':"")+(read?"":" · New")+'</div>'+
    '<strong>'+esc(n.title)+'</strong><p>'+esc(n.body)+'</p>'+
    '<div class="notification-actions">'+(!read?
     '<button type="button" class="button outline" data-mark-read="'+esc(id)+'">Mark as read</button>':
@@ -232,6 +232,7 @@ export function mountNotifications(container,user,profile){
  const token=seq;
  const jobs=admin?[["all",collection(db,"notifications")]]:
   [["members",query(collection(db,"notifications"),where("audience","==","members"))],
+   ["targeted",query(collection(db,"notifications"),where("recipientIds","array-contains",uid))],
    ["personal",query(collection(db,"notifications"),where("recipientId","==",uid))]];
  for(const [key,ref] of jobs){
   stops.push(onSnapshot(ref,snap=>{
