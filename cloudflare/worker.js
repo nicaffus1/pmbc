@@ -65,13 +65,13 @@ async function queryDocs(access,query){
  if(!Array.isArray(response))throw Error("Unexpected Firebase query result.");
  return response.flatMap(x=>x.document?[x.document]:[]);
 }
-async function eligibleTokens(access,audience){
+async function eligibleTokens(access,audience,recipients){
  const users=await queryDocs(access,{
   from:[{collectionId:"users"}],
   where:{fieldFilter:{field:{fieldPath:"status"},op:"EQUAL",value:{stringValue:"approved"}}},
   limit:500
  });
- const allowed=new Set(users.filter(u=>audience!=="admins"||field(u,"role")==="admin")
+ const allowed=new Set(users.filter(u=>audience!=="targeted" || recipients.has(u.name.split("/").at(-1))).filter(u=>audience!=="admins"||field(u,"role")==="admin")
   .map(u=>u.name.split("/").at(-1)));
  // Single collection-group query avoids one network call per church member.
  const tokens=await queryDocs(access,{
@@ -94,8 +94,8 @@ async function sendOne(access,token,notice,id){
   message:{
    token,
    data:{
-    title:String(field(notice,"title")).slice(0,100),
-    body:String(field(notice,"body")).slice(0,500),
+    title:field(notice,"audience")==="targeted"?"Providence message":String(field(notice,"title")).slice(0,100),
+    body:field(notice,"audience")==="targeted"?"Open Providence to read your message.":String(field(notice,"body")).slice(0,500),
     url:ORIGIN+"/pmbc/#"+tab,notificationId:id
    },
    webpush:{headers:{Urgency:"normal"}}
@@ -261,9 +261,10 @@ export default{
    const notice=await firestore(DATABASE+"/notifications/"+encode(notificationId),access);
    const audience=field(notice,"audience");
    if(field(notice,"createdBy")!==uid||field(notice,"active")!==true||
-    !["members","admins"].includes(audience))
+    !["members","admins","targeted"].includes(audience))
     return cors(fail(403,"You can send only your own active administrator notices."),origin);
-   const tokens=await eligibleTokens(access,audience);
+   const recipients=new Set((notice.fields?.recipientIds?.arrayValue?.values||[]).map(v=>v.stringValue));
+   const tokens=await eligibleTokens(access,audience,recipients);
    const batch=tokens.slice(offset,offset+MAX_PER_BATCH);
    if(!batch.length)return cors(json({sent:0,failed:0,total:tokens.length,done:true}),origin);
 

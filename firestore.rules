@@ -51,8 +51,16 @@ service cloud.firestore {
         && request.resource.data.displayName.size() <= 80
         && request.resource.data.createdAt == request.time;
 
-      allow update: if isAdmin();
+      allow update: if isAdmin() && (request.resource.data.status != 'removed' ||
+        (resource.data.status == 'approved' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])));
       allow delete: if false;
+    }
+
+    match /contactGroups/{groupId} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin() && request.resource.data.keys().hasOnly(['name','memberIds'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
+        && request.resource.data.memberIds is list && request.resource.data.memberIds.size() > 0;
     }
 
     // In-app notifications. Only administrators may publish; all approved members
@@ -75,9 +83,15 @@ service cloud.firestore {
       // recipientId. Client users cannot create these via Firestore.
       allow get, list: if isAdmin() ||
         (approvedMember() && resource.data.audience == 'members') ||
+        (approvedMember() && request.auth.uid in resource.data.recipientIds) ||
         (approvedMember() && resource.data.recipientId == request.auth.uid);
       allow create: if isAdmin()
-        && validNotice(request.resource.data)
+        && (validNotice(request.resource.data) || (request.resource.data.audience == 'targeted'
+          && request.resource.data.recipientIds is list && request.resource.data.recipientIds.size() > 0
+          && request.resource.data.keys().hasOnly(['title','body','recipientIds','audience','kind','linkTab','active','createdBy','createdAt'])
+          && request.resource.data.title is string && request.resource.data.title.size() >= 2 && request.resource.data.title.size() <= 100
+          && request.resource.data.body is string && request.resource.data.body.size() >= 3 && request.resource.data.body.size() <= 500
+          && request.resource.data.kind == 'general' && request.resource.data.linkTab == ''))
         && request.resource.data.active == true
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt == request.time;
@@ -111,6 +125,7 @@ service cloud.firestore {
         && (get(/databases/$(database)/documents/notifications/$(notificationId)).data.audience == 'members'
             || (get(/databases/$(database)/documents/notifications/$(notificationId)).data.audience == 'person'
                 && get(/databases/$(database)/documents/notifications/$(notificationId)).data.recipientId == userId)
+            || userId in get(/databases/$(database)/documents/notifications/$(notificationId)).data.get('recipientIds', [])
             || isAdmin())
         && request.resource.data.keys().hasOnly(['readAt'])
         && request.resource.data.keys().hasAll(['readAt'])
@@ -589,7 +604,7 @@ service cloud.firestore {
       allow list: if approvedMember() && resource.data.visible == true;
       allow create, update: if approvedMember() && request.auth.uid == memberId
         && validListing(request.resource.data);
-      allow delete: if false;
+      allow delete: if isAdmin() && getAfter(userPath(memberId)).data.status == 'removed';
     }
 
     // Member help board; offers are only visible to the requester, admins, or the volunteer.
