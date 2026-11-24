@@ -24,7 +24,7 @@ export async function mountMembers(root) {
   group.replaceChildren(option("","New group"));
   picker.replaceChildren();
   for(const [id,p] of members){
-   const label = p.displayName+" ("+p.email+")";
+   const label = (p.displayName || p.email || id) + (p.role === "admin" ? " · Administrator" : "") + (id === auth.currentUser.uid ? " · You" : "") + (p.email ? " (" + p.email + ")" : "");
    member.add(option(id,label));
    const row=document.createElement("label"), box=document.createElement("input");
    box.type="checkbox"; box.value=id;
@@ -55,12 +55,16 @@ export async function mountMembers(root) {
  });
  root.querySelector("#remove-member").onclick=()=>run(async()=>{
   const id=member.value,p=members.get(id);
-  if(!p||p.role==="admin")throw Error("Choose a member without an administrator role.");
-  if(!confirm("Remove "+p.displayName+" ("+p.email+") from app membership and the directory? They will lose member access."))return;
+  if(!p)throw Error("Choose a member first.");
+  const ownAccount = id === auth.currentUser.uid;
+  const warning = ownAccount ? " You will immediately lose administrator access. If you are the last administrator, restoring access will require the Firebase console." : p.role === "admin" ? " This also revokes their administrator access." : "";
+  if(!confirm("Remove "+p.displayName+" ("+p.email+") from app membership and the directory? They will lose member access."+warning))return;
   const batch=writeBatch(db);
   batch.update(doc(db,"users",id),{status:"removed"});
   batch.delete(doc(db,"memberDirectory",id));
-  await batch.commit(); await refresh(); feedback.textContent="Member access removed.";
+  await batch.commit();
+  if (ownAccount) { location.reload(); return; }
+  await refresh(); feedback.textContent="Member access removed.";
  });
  form.onsubmit=e=>{
   e.preventDefault();run(async()=>{
