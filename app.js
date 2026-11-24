@@ -1,3 +1,4 @@
+import { membersPage, mountMembers } from "./member-admin.js";
 // PMBC live member access. Registration remains disabled until Firestore rules are published.
 import { auth, db } from "./firebase.js";
 import { mountPrayer, unmountPrayer } from "./prayer.js";
@@ -9,7 +10,7 @@ import { mountHelpBoard, unmountHelpBoard } from "./help-board.js";
 import { mountCareBoard, unmountCareBoard } from "./care-board.js";
 import { mountServe, unmountServe } from "./serve.js";
 import { mountHomeUpdates, unmountHomeUpdates } from "./home-updates.js";
-import { mountNotifications, unmountNotifications } from "./notifications.js";
+import { mountNotifications, unmountNotifications } from "./notifications.js?v=members1";
 import { mountVideos, unmountVideos } from "./videos.js";
 import { mountDailyVerse, unmountDailyVerse } from "./verse-of-day.js";
 import { mountFacebookPosts, unmountFacebookPosts } from "./facebook-posts.js";
@@ -182,7 +183,7 @@ function adminHub(){
  if(!isAdmin())return '<article class="card">Administrator access is required.</article>';
  return `<span class="eyebrow">Church administration</span><h1>Management Hub</h1>
  <p class="muted">Quick access to ministry administration. Each feature retains its own access controls.</p>
- <section class="admin-links">
+ <section class="admin-links"><a class="feature-link" href="#members"><strong>Members &amp; Groups</strong><span>Manage access and send messages</span></a>
  <a class="feature-link" href="#account"><div><strong>Member Approvals</strong><span>Approve new account requests</span></div><b class="arrow">›</b></a>
  <a class="feature-link" href="#care"><div><strong>Care & Follow-Up</strong><span>Private leadership follow-up tasks</span></div><b class="arrow">›</b></a>
  <a class="feature-link" href="#serve"><div><strong>Volunteer Scheduling</strong><span>Manage teams, positions and shifts</span></div><b class="arrow">›</b></a>
@@ -324,7 +325,7 @@ function adminView() {
  <button class="button outline" id="backToAccount">Back to Account</button>
  ${list || '<p class="muted">No pending membership requests.</p>'}`;
 }
-const views = {connect, home, prayer, serve, more, notifications, videos, bulletin, visitor, missions, studies, groups, hymns, directory, help, care, admin:adminHub, answered, account:accountPage};
+const views = {members:()=>isAdmin()?membersPage():"<p>Administrator access required.</p>",connect, home, prayer, serve, more, notifications, videos, bulletin, visitor, missions, studies, groups, hymns, directory, help, care, admin:adminHub, answered, account:accountPage};
 function navigate(next) {
  const route = next.split("?")[0];
  section = Object.hasOwn(views,route)?route:"home";render();
@@ -344,6 +345,7 @@ function render(){
  unmountDailyVerse();
  unmountFacebookPosts();
  screen.innerHTML=views[section]();
+ if(section==="members" && isAdmin()) mountMembers(screen.querySelector("#members-admin"));
  if(section==="connect" && isApproved()) showOpenNeed(screen.querySelector("#connect-need"));
  if(section==="home"){ mountHomeUpdates(screen,user,profile);mountDailyVerse();mountFacebookPosts();mountVideos(false); }
  if(section==="videos") mountVideos(true,isAdmin());
@@ -356,7 +358,7 @@ function render(){
  if(section==="prayer") mountPrayer(screen.querySelector("#prayer-root"),user,profile);
  if(section==="answered") mountAnsweredPrayers(screen.querySelector("#answered-root"),user,profile);
  if(section==="serve") mountServe(screen.querySelector("#serve-root"),user,profile);
- const parentTab = {visitor:"connect",help:"connect",groups:"connect",directory:"connect",answered:"prayer",bulletin:"home",studies:"more",missions:"more",hymns:"more",admin:"more",care:"more"}[section] || section;
+ const parentTab = {members:"more",visitor:"connect",help:"connect",groups:"connect",directory:"connect",answered:"prayer",bulletin:"home",studies:"more",missions:"more",hymns:"more",admin:"more",care:"more"}[section] || section;
  navTabs.forEach(button=>{
    const active = button.dataset.tab === parentTab;
    button.classList.toggle("active",active);
